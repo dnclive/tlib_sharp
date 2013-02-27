@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Reflection;
 using System.Collections.Generic;
 using System.Text;
 using System.Windows.Forms;
@@ -729,6 +730,16 @@ namespace tlib
 		#endregion функции обратного вызова
 
 		#region async
+
+		static t f_async(string f_name, t args)
+		{
+
+			MethodInfo mi = typeof(t).GetMethod(f_name,
+						System.Reflection.BindingFlags.Public
+						| System.Reflection.BindingFlags.Instance);
+
+			return null;
+		}
 
 		static t f_async(t_f<t, t> f, t args)
 		{
