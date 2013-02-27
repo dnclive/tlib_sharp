@@ -10,56 +10,56 @@ using System.Windows.Forms;
 
 namespace tlib
 {
-    public class t_msslq_cli:t
-    {
+	public class t_msslq_cli : t
+	{
 
-        /// <summary>
-        /// <para>connect to ms sql server</para>
-        /// <para>_</para>
-        /// <para>PARAMS</para>
-        /// <para>server_________________Server address {ip|name}/{server_instance}</para>
-        /// <para>login__________________Login</para>
-        /// <para>pass___________________pass</para>
-        /// <para>_</para>
-        /// <para>RETURN</para>
-        /// <para>good mood</para>
-        /// </summary>
-        public t_msslq_cli f_connect(t args)
-        {
+		/// <summary>
+		/// <para>connect to ms sql server</para>
+		/// <para>_</para>
+		/// <para>PARAMS</para>
+		/// <para>server_________________Server address {ip|name}/{server_instance}</para>
+		/// <para>login__________________Login</para>
+		/// <para>pass___________________pass</para>
+		/// <para>_</para>
+		/// <para>RETURN</para>
+		/// <para>good mood</para>
+		/// </summary>
+		public t_msslq_cli f_connect(t args)
+		{
 
 			if (args == null)
 			{
 				return this;
 			}
 
-            //входные параметры
-            string server = args["server"].f_def("").f_str();
-			string server_name = args["server_name"].f_def("").f_str();
-			string db_name = args["db_name"].f_def("").f_str();
-			string login = args["login"].f_def("").f_str();
-			string pass = args["pass"].f_def("").f_str();
+			//входные параметры
+			string server = args["server"].f_def(this["server"].f_str()).f_def("").f_str();
+			string server_name = args["server_name"].f_def(this["server_name"].f_str()).f_def("").f_str();
+			string db_name = args["db_name"].f_def(this["db_name"].f_str()).f_def("").f_str();
+			string login = args["login"].f_def(this["login"].f_str()).f_def("").f_str();
+			string pass = args["pass"].f_def(this["pass"].f_str()).f_def("").f_str();
 
 			//если уже подключен то выходим
 			//и входные параметры те же
-			if (this["is_connected"].f_def(false).f_val<bool>() &
-				this["server"].f_str() == server && server != "" &&
-				this["server_name"].f_str() == server_name && server_name != "" &&
-				this["db_name"].f_str() == db_name && db_name != "" &&
-				this["login"].f_str() == login && login != "" &&
-				this["pass"].f_str() == pass && pass != "")
+			if (this["is_connected"].f_def(false).f_val<bool>() &&
+				(this["server"].f_str() == server || server == "") &&
+				(this["server_name"].f_str() == server_name || server_name == "") &&
+				(this["db_name"].f_str() == db_name || db_name == "") &&
+				(this["login"].f_str() == login || login == "") &&
+				(this["pass"].f_str() == pass || pass == ""))
 			{
 				return this;
 			}
 
-            //формируем строку подключения, без указания конкретной БД
-            string sql_conn_str =	"Server=" + server + 
-									(server_name==""?"":"\\" + server_name) +
-									(db_name==""?"":";Database="+db_name) +
-									";User Id=" + login + 
+			//формируем строку подключения, без указания конкретной БД
+			string sql_conn_str = "Server=" + server +
+									(server_name == "" ? "" : "\\" + server_name) +
+									(db_name == "" ? "" : ";Database=" + db_name) +
+									";User Id=" + login +
 									";Password=" + pass;
 
-            //создаем подключение
-            SqlConnection sql_conn = new SqlConnection(sql_conn_str);
+			//создаем подключение
+			SqlConnection sql_conn = new SqlConnection(sql_conn_str);
 
 			//выносим в global нашего объекта
 			this["sql_conn_str"] = new t(sql_conn_str);
@@ -78,13 +78,13 @@ namespace tlib
 
 				this["is_connected"].f_val(true);
 			}
-			catch (SqlException sex)
+			catch (Exception ex)
 			{
 				this["is_connected"].f_val(false);
 				t.f_f(args["f_fail"].f_f(), this.f_add(true, new t() 
 				{ 
 					{ "message", "connection failed" },
-					{ "ex", sex}
+					{ "ex", ex}
 				}));
 				return this;
 			}
@@ -93,7 +93,7 @@ namespace tlib
 			t.f_f(args["f_done"].f_f(), new t() { { "message", "connection is ok" } });
 
 			return this;
-        }
+		}
 
 		/// <summary>
 		/// <para>set current database for current open connection</para>
@@ -108,21 +108,21 @@ namespace tlib
 		{
 			SqlConnection conn = this["sql_conn"].f_val<SqlConnection>();
 
-			//если уже установлена необходимая БД просто уходим
-			if (this["db_name"].f_str() == args["db_name"].f_str())
+			//если уже установлена необходимая БД или не перенадна новая просто уходим
+			if (this["db_name"].f_str() == args["db_name"].f_str() || args["db_name"].f_str() == "")
 			{
 				return this["db_name"].f_str();
 			}
 
-			Console.WriteLine("this:"+this["db_name"].f_str());
+			Console.WriteLine("this:" + this["db_name"].f_str());
 			Console.WriteLine("args:" + args["db_name"].f_str());
 
 			//заменяем текущее значение db_name, если переданое не null
-			string db_name=this.f_replace("db_name", args["db_name"])["db_name"].f_str();
+			string db_name = this.f_replace("db_name", args["db_name"])["db_name"].f_str();
 
 			Console.WriteLine("this:" + this["db_name"].f_str());
 			Console.WriteLine("args:" + args["db_name"].f_str());
-			Console.WriteLine("result:" +db_name);
+			Console.WriteLine("result:" + db_name);
 
 			if (db_name != "")
 			{
@@ -139,50 +139,51 @@ namespace tlib
 			return db_name;
 		}
 
-        /// <summary>
-        /// <para>execute no queyr sql command</para>
-        /// <para>_</para>
-        /// <para>PARAMS</para>
-        /// <para>cmd_________________Select sql command text</para>
-        /// <para>_</para>
-        /// <para>RETURN</para>
-        /// <para></para>
-        /// </summary>
-        public void f_exec_cmd(t args)
-        {
-            string cmd_text = args["cmd"].f_str();
-            SqlConnection conn = this["sql_connection"].f_val<SqlConnection>();
+		/// <summary>
+		/// <para>execute no queyr sql command</para>
+		/// <para>_</para>
+		/// <para>PARAMS</para>
+		/// <para>cmd_________________Select sql command text</para>
+		/// <para>_</para>
+		/// <para>RETURN</para>
+		/// <para></para>
+		/// </summary>
+		public void f_exec_cmd(t args)
+		{
+			string cmd_text = args["cmd"].f_str();
+			SqlConnection conn = this["sql_connection"].f_val<SqlConnection>();
 
-            SqlCommand cmd = new SqlCommand(cmd_text, conn);
-
-
+			SqlCommand cmd = new SqlCommand(cmd_text, conn);
 
 
-            //chb_db.Items.Add();
-        }
 
-        /// <summary>
-        /// <para>execute select query and return DataTable</para>
-        /// <para>_</para>
-        /// <para>PARAMS</para>
-        /// <para>cmd_________________Select sql command text</para>
-        /// <para>tab_name____________Name for returning table</para>
-        /// <para>f_done______________Callback function</para>
-        /// <para>_</para>
-        /// <para>RETURN</para>
-        /// <para>tab_________________requested table</para>
-        /// </summary>
-        public void f_select(t args)
-        {
 
-            string cmd_text = args["cmd"].f_str();
-            string tab_name = args["tab_name"].f_str();
+			//chb_db.Items.Add();
+		}
+
+		/// <summary>
+		/// <para>execute select query and return DataTable</para>
+		/// <para>_</para>
+		/// <para>PARAMS</para>
+		/// <para>cmd_________________Select sql command text</para>
+		/// <para>tab_name____________Name for returning table</para>
+		/// <para>f_done______________Callback function</para>
+		/// <para>_</para>
+		/// <para>RETURN</para>
+		/// <para>tab_________________requested table</para>
+		/// </summary>
+		public void f_select(t args)
+		{
+
+			string cmd_text = args["cmd"].f_str();
+			string tab_name = args["tab_name"].f_str();
 			string query = args["each"]["query"].f_str();
 			string sort = args["each"]["sort"].f_str();
 
 			//OleDbConnection conn = f_connect(args)["sql_conn"].f_val<OleDbConnection>();
 			SqlConnection conn = f_connect(new t().f_add(true, args).f_drop(new List<string>() { "f_done", "f_fail" }))
 									["sql_conn"].f_val<SqlConnection>();
+
 
 			//если соединиться не удалось вызываем fail и прекращаем работу
 			if (!this["is_connected"].f_val<bool>())
@@ -191,7 +192,7 @@ namespace tlib
 				return;
 			}
 
-            //t_f<t, t> f_done = args["f_done"].f_f<t_f>();
+			//t_f<t, t> f_done = args["f_done"].f_f<t_f>();
 
 			try
 			{
@@ -203,7 +204,7 @@ namespace tlib
 
 				Console.WriteLine(conn.Database);
 
-				//создаем адаптек для запроса
+				//создаем адаптер для запроса
 				SqlDataAdapter ad = new SqlDataAdapter(cmd_text, conn);
 
 				//создаем таблицу для результата
@@ -214,11 +215,11 @@ namespace tlib
 
 				conn.Close();
 
-				//вкидываем в принятые параметры полеченную таблицу и возвращаем результат
+				//вкидываем в принятые параметры полученную таблицу и возвращаем результат
 				//в функцию обратного вызова
 				args["tab"] = new t(tab);
 
-				//если переданана функция перебора элементов результата (строк таблицы)
+				//если передананая функция перебора элементов результата (строк таблицы)
 				if (args["f_each"] != null)
 				{
 
@@ -230,15 +231,15 @@ namespace tlib
 						//добавляем к входным параметрам текущую строку и индекс этой строки
 						//и вызываем f_each
 						f_f("f_each", args.f_add(true, new t()
-					{
-						{	//добавляем к each переданному свои значения
-							"each", args["each"].f_add(true, new t()
-							{
-								{"item",	dr},
-								{"index",	i}
-							})
-						}
-					}));
+						{
+							{	//добавляем к each переданному свои значения
+								"each", args["each"].f_add(true, new t()
+								{
+									{"item",	dr},
+									{"index",	i}
+								})
+							}
+						}));
 					}
 
 				}
@@ -258,12 +259,12 @@ namespace tlib
 				}));
 			}
 
-            return;
-        }
+			return;
+		}
 
 		public string f_make_ins_query(t args)
 		{
-			DataTable tab=args["tab"].f_val<DataTable>();
+			DataTable tab = args["tab"].f_val<DataTable>();
 
 			string set_date_format_sql = "SET DATEFORMAT ymd \r\n";
 			string set_language_sql = "SET LANGUAGE Russian \r\n";
@@ -309,7 +310,7 @@ namespace tlib
 
 			return query;
 		}
-		
+
 		/*
 		public void f_2_store(DataTable tab, string id_key)
 		{

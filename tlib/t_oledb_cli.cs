@@ -7,10 +7,11 @@ using System.Data.SqlClient;
 using System.Data.Sql;
 using System.Data.SqlTypes;
 using System.Data.OleDb;
+using System.Windows.Forms;
 
 namespace tlib
 {
-	public class t_oledb_cli:t
+	public class t_oledb_cli : t
 	{
 
 		public t_oledb_cli()
@@ -53,10 +54,12 @@ namespace tlib
 			string login = args["login"].f_def("").f_str();
 			string pass = args["pass"].f_def("").f_str();
 
+			bool conn_keep_open = args["conn_keep_open"].f_def(false).f_val<bool>();
+
 			//если уже подключен то выходим
 			//и входные параметры те же
 			if (this["is_connected"].f_def(false).f_val<bool>() &&
-				this["location"].f_str()==location && location!="" //&&
+				this["location"].f_str() == location && location != "" //&&
 				//this["db_file_name"].f_str()==db_file_name&
 				//this["login"].f_str() == login && login != "" &&
 				//this["pass"].f_str()==pass && pass!="")
@@ -66,10 +69,10 @@ namespace tlib
 			}
 
 			//формируем строку подключения, без указания конкретной БД
-			string sql_conn_str =	@"Provider=Microsoft.Jet.OLEDB.4.0;"+
-									@"Data Source="+
-									(location==""?"":location)+";"+
-									//(db_file_name==""?"":db_file_name)+";"+
+			string sql_conn_str = @"Provider=Microsoft.Jet.OLEDB.4.0;" +
+									@"Data Source=" +
+									(location == "" ? "" : location) + ";" +
+				//(db_file_name==""?"":db_file_name)+";"+
 									@"Extended Properties=dBASE IV;User ID=Admin;Password=;";
 
 			//создаем подключение
@@ -88,7 +91,13 @@ namespace tlib
 			try
 			{
 				sql_conn.Open();
-				sql_conn.Close();
+				this["is_connected"].f_val(true);
+
+				if (!conn_keep_open)
+				{
+					sql_conn.Close();
+					this["is_connected"].f_val(false);
+				}
 			}
 			catch (SqlException sex)
 			{
@@ -101,7 +110,6 @@ namespace tlib
 				return this;
 			}
 
-			this["is_connected"].f_val(true);
 
 			//вызываем f_done и сообщаем что все ок
 			t.f_f(args["f_done"].f_f(), new t() { { "message", "connection is ok" } });
@@ -159,19 +167,30 @@ namespace tlib
 		public t_oledb_cli f_exec_cmd(t args)
 		{
 			string cmd_text = args["cmd"].f_str();
+			bool conn_keep_open = args["conn_keep_open"].f_def(false).f_val<bool>();
 
 			OleDbConnection conn = f_connect(args)["sql_conn"].f_val<OleDbConnection>();
 
+			bool is_connected = this["is_connected"].f_def(false).f_val<bool>();
+
 			OleDbCommand cmd = new OleDbCommand(cmd_text, conn);
+
+			//MessageBox.Show(is_connected.ToString());
+			//MessageBox.Show(conn_keep_open.ToString());
 
 			try
 			{
-
-				conn.Open();
+				if (!is_connected || conn.State != ConnectionState.Open)
+				{
+					conn.Open();
+				}
 
 				int cmd_exec_cnt = cmd.ExecuteNonQuery();
 
-				conn.Close();
+				if (!conn_keep_open)
+				{
+					conn.Close();
+				}
 
 				//вызываем f_done
 				t.f_fdone(args);
@@ -264,7 +283,7 @@ namespace tlib
 				}
 
 			}
-			
+
 			args.f_drop("each");
 
 			//вызываем f_done
@@ -287,7 +306,7 @@ namespace tlib
 			{
 				//insert _table_name_
 				string ins_dr_sql = " insert into " + tab_name;
-				
+
 
 
 
@@ -310,7 +329,7 @@ namespace tlib
 
 				ins_dr_sql += " values ( " + vals + " ) ; ";
 
-				ins_sql_str += ins_dr_sql+" \r\n";
+				ins_sql_str += ins_dr_sql + " \r\n";
 				//MessageBox.Show(vals);
 				//MessageBox.Show(ins_sql_str);
 				//break;

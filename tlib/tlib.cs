@@ -39,8 +39,8 @@ namespace tlib
 		}
 	}
 
-    //определяет как смешиваются структуры
-    enum t_mix { replace, empty_only };
+	//определяет как смешиваются структуры
+	enum t_mix { replace, empty_only };
 
 	//класс представляет собой универсальный динамический, структурируемый тип данных
 	//где каждый элемент может быть строкой, числом, массивом, структурой, функцией и тд.
@@ -54,12 +54,12 @@ namespace tlib
 		private List<t> val_arr = new List<t>();
 
 		//значение элемента если это строка целое, и тд любой значащий тип
-		public object val;
+		public object val = null;
 
 		public Type val_type;
 
 		//значение если это делегат, те функция
-		public Delegate f;
+		public Delegate f = null;
 
 		//флаг определяющий тип текущего объекта массив, структура, значение, функция
 		//на данный момент не используется...
@@ -69,7 +69,7 @@ namespace tlib
 		bool is_f;
 
 		//true если данных t не несет значения
-		bool is_val_empty=true;
+		bool is_val_empty = true;
 
 		#region конструкторы
 
@@ -90,29 +90,29 @@ namespace tlib
 			is_val_empty = false;
 		}
 
-        #region adding and setting value
+		#region adding and setting value
 
-        public t f_add(bool replace, t val)
-        {
-            //сливаем key_val_arr
-            foreach (KeyValuePair<string, t> item in (IDictionary<string, t>)val)
-            {
-                if (replace)
-                {
-                    key_val_arr[item.Key] = item.Value;
-                    continue;
-                }
-                if (!key_val_arr.ContainsKey(item.Key))
-                {
-                    key_val_arr[item.Key] = item.Value;
-                }
-            }
+		public t f_add(bool replace, t val)
+		{
+			//сливаем key_val_arr
+			foreach (KeyValuePair<string, t> item in (IDictionary<string, t>)val)
+			{
+				if (replace)
+				{
+					key_val_arr[item.Key] = item.Value;
+					continue;
+				}
+				if (!key_val_arr.ContainsKey(item.Key))
+				{
+					key_val_arr[item.Key] = item.Value;
+				}
+			}
 
-            //сливаем val_arr
-            foreach (t item in (IList<t>)val)
-            {
+			//сливаем val_arr
+			foreach (t item in (IList<t>)val)
+			{
 				val_arr.Add(item);
-            }
+			}
 
 			//заменяем значение если нужно
 			if (replace)
@@ -120,9 +120,9 @@ namespace tlib
 				this.val = val.val;
 			}
 
-            return this;
+			return this;
 
-        }
+		}
 
 		/// <summary>
 		/// <para>replace current value if passed val is not null</para>
@@ -147,7 +147,7 @@ namespace tlib
 			}
 			return this;
 		}
-		
+
 		/// <summary>
 		/// <para>replace item value if passed item is not null</para>
 		/// <para>_</para>
@@ -160,13 +160,13 @@ namespace tlib
 		/// заменяет свой элемент если новое предлагаемое значение не пусто
 		public t f_replace(string key, t item)
 		{
-			Console.WriteLine("item.val "+item.val.ToString());
+			Console.WriteLine("item.val " + item.val.ToString());
 			//если передаваемое занчение пустое
-			if ((item.val==null || item.val.ToString() == "") && item.f == null)
+			if ((item.val == null || item.val.ToString() == "") && item.f == null)
 			{
 				return this;
 			}
-			
+
 			this[key] = item;
 			return this;
 		}
@@ -178,7 +178,7 @@ namespace tlib
 		#region полечуние значения
 
 		//на удаление!!!
-        public t_f<t, t> f_f<D>()
+		public t_f<t, t> f_f<D>()
 		{
 			//return Delegate.CreateDelegate(
 			return (t_f<t, t>)f;
@@ -193,10 +193,11 @@ namespace tlib
 		/*возвращает объект*/
 		public T f_val<T>()
 		{
+			//if (val == null) return val;
 			//MessageBox.Show(typeof(T).ToString());
 			if (typeof(T).ToString() == "System.Boolean")
 			{
-				if (val == null || val.ToString() == "false")
+				if (val == null || val.ToString() == "False")
 				{
 					return (T)Convert.ChangeType(false, typeof(T));
 				}
@@ -211,12 +212,12 @@ namespace tlib
 			{
 				return (T)val;
 			}
-			catch (InvalidCastException ex)
+			catch (Exception ex)
 			{
-				
+
 				ex.Data.Add("t", this);
 				ex.Data.Add("val", val);
-				MessageBox.Show(val.ToString() + "\r\n"+ex.Message);
+				//MessageBox.Show(val.ToString() + "\r\n"+ex.Message);
 				throw (ex);
 			}
 
@@ -269,18 +270,37 @@ namespace tlib
 		public t f_def(object val)
 		{
 			t new_t = new t(this.val);
-			if (new_t.val == null)
+			if (this.val == null)
 			{
 				new_t.val = val;
 			}
 			return new_t;
 		}
 
+		public t f_def_get(object val)
+		{
+			t new_t = new t(this.val);
+			if (this.val == null)
+			{
+				new_t.val = val;
+			}
+			return new_t;
+		}
+
+		public t f_def_set(object val)
+		{
+			if (this.val == null)
+			{
+				this.val = val;
+			}
+			return this;
+		}
+
 		//значение пустое
 		//требует переработки
 		public bool f_is_empty()
 		{
-			if ((val == null || val == "" )&& f==null)
+			if ((val == null || val == "") && f == null)
 			{
 				return true;
 			}
@@ -378,7 +398,7 @@ namespace tlib
 			{
 				Remove(key);
 			}
-			
+
 			return this;
 		}
 
@@ -391,7 +411,7 @@ namespace tlib
 			get
 			{
 				//MessageBox.Show(key_val_arr.ContainsKey(key).ToString());
-				
+
 
 				if (key_val_arr.ContainsKey(key))
 				{
@@ -409,7 +429,7 @@ namespace tlib
 				//MessageBox.Show(key_val_arr.ContainsKey(key).ToString());
 				//Console.WriteLine(key);
 				//Console.WriteLine(value.GetType().ToString());
-				
+
 				//берем переданное значение
 				t tval = null;
 
@@ -647,72 +667,72 @@ namespace tlib
 
 		#endregion enumerators
 
-        #region функции обратного вызова
+		#region функции обратного вызова
 
-        public static void f_f(string f_name, t args)
-        {
+		public static void f_f(string f_name, t args)
+		{
 			if (args == null) return;
-            if (args[f_name].f_f<t_f<t, t>>() != null)
-            {
-                args[f_name].f_f<t_f<t, t>>()(args);
-            }
-        }
+			if (args[f_name].f_f<t_f<t, t>>() != null)
+			{
+				args[f_name].f_f<t_f<t, t>>()(args);
+			}
+		}
 
-        public static void f_f(t_f<t, t> f, t args)
-        {
-            if (f != null)
-            {
-                f(args);
-            }
-        }
+		public static void f_f(t_f<t, t> f, t args)
+		{
+			if (f != null)
+			{
+				f(args);
+			}
+		}
 
-        #region выполнено
+		#region выполнено
 
-        public static void f_fdone(t args)
-        {
-            if (args["f_done"].f_f<t_f<t, t>>() != null)
-            {
-                args["f_done"].f_f<t_f<t, t>>()(args);
-            }
-        }
+		public static void f_fdone(t args)
+		{
+			if (args["f_done"].f_f<t_f<t, t>>() != null)
+			{
+				args["f_done"].f_f<t_f<t, t>>()(args);
+			}
+		}
 
-        public static void f_fdone(t_f<t, t> f_done, t args)
-        {
-            if (f_done != null)
-            {
-                f_fdone(args);
-            }
-        }
+		public static void f_fdone(t_f<t, t> f_done, t args)
+		{
+			if (f_done != null)
+			{
+				f_fdone(args);
+			}
+		}
 
-        #endregion выполнено
+		#endregion выполнено
 
-        #region перебор элементов
+		#region перебор элементов
 
-        public static void f_feach(t args)
-        {
-            if (args["f_each"].f_f<t_f<t, t>>() != null)
-            {
-                args["f_each"].f_f<t_f<t, t>>()(args);
-            }
-        }
+		public static void f_feach(t args)
+		{
+			if (args["f_each"].f_f<t_f<t, t>>() != null)
+			{
+				args["f_each"].f_f<t_f<t, t>>()(args);
+			}
+		}
 
-        public static void f_feach(t_f<t, t> f_each, t args)
-        {
-            if (f_each != null)
-            {
-                f_feach(args);
-            }
-        }
+		public static void f_feach(t_f<t, t> f_each, t args)
+		{
+			if (f_each != null)
+			{
+				f_feach(args);
+			}
+		}
 
-        #endregion перебор элементов
+		#endregion перебор элементов
 
-        #endregion функции обратного вызова
+		#endregion функции обратного вызова
 
 		#region async
 
-		static t f_async(t_f<t,t> f, t args)
+		static t f_async(t_f<t, t> f, t args)
 		{
-			IAsyncResult result = f.BeginInvoke(args,new AsyncCallback(f_async_done),null);
+			IAsyncResult result = f.BeginInvoke(args, new AsyncCallback(f_async_done), null);
 
 			return new t();
 		}
@@ -721,8 +741,8 @@ namespace tlib
 		{
 			// Retrieve the delegate.
 			AsyncResult result = (AsyncResult)ar;
-			t_f<t,t> caller = (t_f<t,t>)result.AsyncDelegate;
-			
+			t_f<t, t> caller = (t_f<t, t>)result.AsyncDelegate;
+
 			// Retrieve the format string that was passed as state 
 			// information.
 			t args = (t)ar.AsyncState;
