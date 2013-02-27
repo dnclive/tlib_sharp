@@ -38,6 +38,7 @@ namespace tlib
 			string db_name = args["db_name"].f_def(this["db_name"].f_str()).f_def("").f_str();
 			string login = args["login"].f_def(this["login"].f_str()).f_def("").f_str();
 			string pass = args["pass"].f_def(this["pass"].f_str()).f_def("").f_str();
+			string timeout = args["timeout"].f_def(this["timeout"].f_str()).f_def(60).f_str();
 
 			//если уже подключен то выходим
 			//и входные параметры те же
@@ -56,7 +57,8 @@ namespace tlib
 									(server_name == "" ? "" : "\\" + server_name) +
 									(db_name == "" ? "" : ";Database=" + db_name) +
 									";User Id=" + login +
-									";Password=" + pass;
+									";Password=" + pass+
+									";Connection Timeout="+timeout;
 
 			//создаем подключение
 			SqlConnection sql_conn = new SqlConnection(sql_conn_str);
@@ -193,7 +195,6 @@ namespace tlib
 			}
 
 			//t_f<t, t> f_done = args["f_done"].f_f<t_f>();
-
 			try
 			{
 
