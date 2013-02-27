@@ -48,21 +48,21 @@ namespace tlib
 			}
 
 			//входные параметры
-			string location = args["location"].f_def("").f_str();
+			string location = args["location"].f_def(this["location"].f_str()).f_def("").f_str();
 			//string server_name = args["server_name"].f_str();
 			//string db_file_name = args["db_file_name"].f_def("").f_str();
-			string login = args["login"].f_def("").f_str();
-			string pass = args["pass"].f_def("").f_str();
+			string login = args["login"].f_def(this["login"].f_str()).f_def("").f_str();
+			string pass = args["pass"].f_def(this["pass"].f_str()).f_def("").f_str();
 
-			bool conn_keep_open = args["conn_keep_open"].f_def(false).f_val<bool>();
+			bool conn_keep_open = args["conn_keep_open"].f_def(true).f_val<bool>();
 
 			//если уже подключен то выходим
 			//и входные параметры те же
 			if (this["is_connected"].f_def(false).f_val<bool>() &&
-				this["location"].f_str() == location && location != "" //&&
+				(this["location"].f_str() == location || location == "") //&&
 				//this["db_file_name"].f_str()==db_file_name&
-				//this["login"].f_str() == login && login != "" &&
-				//this["pass"].f_str()==pass && pass!="")
+				//this["login"].f_str() == login || login != "" &&
+				//this["pass"].f_str()==pass || pass!="")
 				)
 			{
 				return this;
@@ -170,6 +170,7 @@ namespace tlib
 			bool conn_keep_open = args["conn_keep_open"].f_def(false).f_val<bool>();
 
 			OleDbConnection conn = f_connect(args)["sql_conn"].f_val<OleDbConnection>();
+			//OleDbConnection conn = args["sql_conn"].f_val<OleDbConnection>();
 
 			bool is_connected = this["is_connected"].f_def(false).f_val<bool>();
 
@@ -180,7 +181,8 @@ namespace tlib
 
 			try
 			{
-				if (!is_connected || conn.State != ConnectionState.Open)
+				//if (!is_connected || conn.State != ConnectionState.Open)
+				if (conn.State != ConnectionState.Open)
 				{
 					conn.Open();
 				}
