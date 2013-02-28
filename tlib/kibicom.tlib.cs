@@ -7,7 +7,7 @@ using System.Threading;
 using System.Runtime.Remoting;
 using System.Runtime.Remoting.Messaging;
 
-namespace tlib
+namespace kibicom.tlib
 {
 
 	#region делигаты
@@ -731,22 +731,45 @@ namespace tlib
 
 		#region async
 
-		static t f_async(string f_name, t args)
+		delegate t d_f_async_self(object obj, string f_name, t args);
+
+		public t f_async(string f_name, t args)
 		{
 
-			MethodInfo mi = typeof(t).GetMethod(f_name,
-						System.Reflection.BindingFlags.Public
-						| System.Reflection.BindingFlags.Instance);
+			//MethodInfo mi = this.GetType().GetMethod(f_name,
+			//			System.Reflection.BindingFlags.Public
+			//			| System.Reflection.BindingFlags.Instance);
+
+			//this.GetType().InvokeMember(
+
+			//t.f_async((t_f<t, t>)mi, args);
+
+			//mi.Invoke();
+
+
+			//
+			d_f_async_self f_async_self = new d_f_async_self(t.f_async_self);
+
+			IAsyncResult result = f_async_self.BeginInvoke(this, f_name, args, new AsyncCallback(f_async_done), null);
 
 			return null;
 		}
 
-		static t f_async(t_f<t, t> f, t args)
+		static t f_async_self(object obj, string f_name, t args)
+		{
+
+			obj.GetType().GetMethod(f_name).Invoke(obj, new object[] { args });
+
+			return new t();
+		}
+
+		static t f_async(object obj, t_f<t, t> f, t args)
 		{
 			IAsyncResult result = f.BeginInvoke(args, new AsyncCallback(f_async_done), null);
 
 			return new t();
 		}
+
 
 		static void f_async_done(IAsyncResult ar)
 		{

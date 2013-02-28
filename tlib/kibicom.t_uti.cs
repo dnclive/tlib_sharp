@@ -4,7 +4,7 @@ using System.Text;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 
-namespace tlib
+namespace kibicom.tlib
 {
 	public delegate void josi_f_done(object args);
 

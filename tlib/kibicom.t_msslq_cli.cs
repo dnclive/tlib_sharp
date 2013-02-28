@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
+//using System.Linq;
 using System.Text;
 using System.Data;
 using System.Data.SqlClient;
@@ -8,7 +8,7 @@ using System.Data.Sql;
 using System.Data.SqlTypes;
 using System.Windows.Forms;
 
-namespace tlib
+namespace kibicom.tlib
 {
 	public class t_msslq_cli : t
 	{
