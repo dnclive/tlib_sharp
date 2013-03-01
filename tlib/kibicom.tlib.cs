@@ -330,9 +330,13 @@ namespace kibicom.tlib
 			{
 				return "";
 			}
-			else
+			if (val.GetType().Name == "System.String")
 			{
 				return (string)val;
+			}
+			else
+			{
+				return val.ToString();
 			}
 		}
 
