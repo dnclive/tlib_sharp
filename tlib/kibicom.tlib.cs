@@ -436,7 +436,7 @@ namespace kibicom.tlib
 
 				//если тим значения не tlib.t
 				//преобразуем к нему
-				if (value.GetType().ToString() != "tlib.t")
+				if (value.GetType().ToString() != "kibicom.tlib.t")
 				{
 					tval = new t(value);
 				}
