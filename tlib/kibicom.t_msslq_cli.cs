@@ -18,8 +18,10 @@ namespace kibicom.tlib
 		/// <para>_</para>
 		/// <para>PARAMS</para>
 		/// <para>server_________________Server address {ip|name}/{server_instance}</para>
+		/// <para>db_name_________________Data base name</para>
 		/// <para>login__________________Login</para>
 		/// <para>pass___________________pass</para>
+		/// <para>timeout___________________timeout responce</para>
 		/// <para>_</para>
 		/// <para>RETURN</para>
 		/// <para>good mood</para>
@@ -40,9 +42,28 @@ namespace kibicom.tlib
 			string pass = args["pass"].f_def(this["pass"].f_str()).f_def("").f_str();
 			string timeout = args["timeout"].f_def(this["timeout"].f_str()).f_def(60).f_str();
 
+			SqlConnection conn = this["sql_conn"].f_def_set(args["conn"].f_val<SqlConnection>()).f_def(new SqlConnection()).f_val<SqlConnection>();
+
+			bool reconnect = args["reconnect"].f_def(this["reconnect"].f_str()).f_def(true).f_val<bool>();
+
+			bool is_connected=this["is_connected"].f_def(false).f_val<bool>();
+
+			//если подключение содержит строку подключения и нельзя переподключаться то считаем что уже подключены
+			if (conn.ConnectionString != ""&& !reconnect)
+			{
+				this["is_connected"].f_val(true);
+				return this;
+			}
+
+			//если уже подключениы и нельзя переподключаться то возвращаемся
+			if (is_connected && !reconnect)
+			{
+				return this;
+			}
+
 			//если уже подключен то выходим
 			//и входные параметры те же
-			if (this["is_connected"].f_def(false).f_val<bool>() &&
+			if (is_connected &&
 				(this["server"].f_str() == server || server == "") &&
 				(this["server_name"].f_str() == server_name || server_name == "") &&
 				(this["db_name"].f_str() == db_name || db_name == "") &&
@@ -59,7 +80,7 @@ namespace kibicom.tlib
 									";User Id=" + login +
 									";Password=" + pass+
 									";Connection Timeout="+timeout;
-
+			MessageBox.Show(sql_conn_str);
 			//создаем подключение
 			SqlConnection sql_conn = new SqlConnection(sql_conn_str);
 
