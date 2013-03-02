@@ -80,7 +80,7 @@ namespace kibicom.tlib
 									";User Id=" + login +
 									";Password=" + pass+
 									";Connection Timeout="+timeout;
-			MessageBox.Show(sql_conn_str);
+			
 			//создаем подключение
 			SqlConnection sql_conn = new SqlConnection(sql_conn_str);
 
