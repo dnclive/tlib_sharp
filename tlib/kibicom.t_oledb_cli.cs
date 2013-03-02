@@ -75,8 +75,12 @@ namespace kibicom.tlib
 				//(db_file_name==""?"":db_file_name)+";"+
 									@"Extended Properties=dBASE IV;User ID=Admin;Password=;";
 
+			//sql_conn_str = "Provider=SQLOLEDB;OLE DB Services=-4;Data Source="+location+";Integrated Security=SSPI;";
+
 			//создаем подключение
 			OleDbConnection sql_conn = new OleDbConnection(sql_conn_str);
+
+			
 
 			//выносим в global нашего объекта
 			this["sql_conn_str"] = new t(sql_conn_str);
@@ -93,10 +97,10 @@ namespace kibicom.tlib
 				sql_conn.Open();
 				this["is_connected"].f_val(true);
 
-				if (!conn_keep_open)
+				//if (!conn_keep_open)
 				{
 					sql_conn.Close();
-					this["is_connected"].f_val(false);
+					//this["is_connected"].f_val(false);
 				}
 			}
 			catch (SqlException sex)
@@ -187,6 +191,7 @@ namespace kibicom.tlib
 					conn.Open();
 				}
 
+				cmd.Prepare();
 				int cmd_exec_cnt = cmd.ExecuteNonQuery();
 
 				if (!conn_keep_open)
