@@ -774,7 +774,6 @@ namespace kibicom.tlib
 			return new t();
 		}
 
-
 		static void f_async_done(IAsyncResult ar)
 		{
 			// Retrieve the delegate.
@@ -798,6 +797,46 @@ namespace kibicom.tlib
 		}
 
 		#endregion async
+
+		#region seq complex
+
+		//массив цепочек
+		static t chain_arr = new t();
+
+		public t f_chain(t args)
+		{
+			string seq_name = args["seq_name"].f_def("main").f_str();
+			bool async = args["async"].f_def(false).f_val<bool>();
+
+			//перебираем переданные функции
+			foreach (t f in (IList<t>)args["seq"])
+			{
+				chain_arr[seq_name].f_def_set(new t()
+				{
+					{"name",			seq_name},
+					{"is_seq",			true},
+					{"current_index",	0},
+					{"all_done",		false}
+
+				})["items"].Add(new t(f));
+			}
+
+			//не реализована возможность асинхронного вызова
+
+			//текущая цепочка
+			t chain=chain_arr[seq_name];
+
+			//текущая функция для вызова
+			int index=chain["current_index"].f_def(0).f_val<int>();
+
+			//вызываем первую функцию цепочки
+			chain["items"][index].f_f().Invoke(args);
+
+
+			return null;
+		}
+
+		#endregion seq complex
 
 	}
 
