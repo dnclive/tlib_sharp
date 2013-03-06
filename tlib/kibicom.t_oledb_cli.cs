@@ -73,7 +73,8 @@ namespace kibicom.tlib
 									@"Data Source=" +
 									(location == "" ? "" : location) + ";" +
 				//(db_file_name==""?"":db_file_name)+";"+
-									@"Extended Properties=dBASE IV;User ID=Admin;Password=;";
+									@"Extended Properties=dBASE IV;User ID=Admin;Password=;";//+
+									//@"Connect Timeout=30;";
 
 			//sql_conn_str = "Provider=SQLOLEDB;OLE DB Services=-4;Data Source="+location+";Integrated Security=SSPI;";
 
@@ -94,6 +95,7 @@ namespace kibicom.tlib
 			//пробуем поднять содединение...
 			try
 			{
+				//MessageBox.Show(sql_conn.ConnectionTimeout.ToString());
 				sql_conn.Open();
 				this["is_connected"].f_val(true);
 
@@ -103,13 +105,16 @@ namespace kibicom.tlib
 					//this["is_connected"].f_val(false);
 				}
 			}
-			catch (SqlException sex)
+			catch (Exception ex)
 			{
 				this["is_connected"].f_val(false);
+
+				ex.Data.Add("args", args);
+
 				t.f_f(args["f_fail"].f_f(), new t() 
 				{ 
 					{ "message", "connection failed" },
-					{ "ex", sex}
+					{ "ex", ex}
 				});
 				return this;
 			}
@@ -206,6 +211,9 @@ namespace kibicom.tlib
 			catch (Exception ex)
 			{
 				conn.Close();
+
+				ex.Data.Add("args", args);
+
 				t.f_f(args["f_fail"].f_f(), args.f_add(true, new t() 
 				{ 
 					{ "message", "connection failed" },

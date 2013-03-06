@@ -104,6 +104,9 @@ namespace kibicom.tlib
 			catch (Exception ex)
 			{
 				this["is_connected"].f_val(false);
+
+				ex.Data.Add("args", args);
+
 				t.f_f(args["f_fail"].f_f(), this.f_add(true, new t() 
 				{ 
 					{ "message", "connection failed" },
@@ -274,9 +277,12 @@ namespace kibicom.tlib
 			catch (Exception ex)
 			{
 				conn.Close();
+
+				ex.Data.Add("args", args);
+
 				t.f_f(args["f_fail"].f_f(), args.f_add(true, new t() 
 				{ 
-					{ "message", "connection failed" },
+					{ "message", "query execution failed\r\n\r\n"+cmd_text },
 					{ "ex", ex}
 				}));
 			}

@@ -218,6 +218,7 @@ namespace kibicom.tlib
 
 				ex.Data.Add("t", this);
 				ex.Data.Add("val", val);
+				ex.Data.Add("args", ex);
 				//MessageBox.Show(val.ToString() + "\r\n"+ex.Message);
 				throw (ex);
 			}
@@ -270,22 +271,30 @@ namespace kibicom.tlib
 		//значение по умолчанию
 		public t f_def(object val)
 		{
-			t new_t = new t(this.val);
 			if (this.val == null)
 			{
+				t new_t = new t(this.val);
 				new_t.val = val;
+				return new_t;
 			}
-			return new_t;
+			else
+			{
+				return this;
+			}
 		}
 
 		public t f_def_get(object val)
 		{
-			t new_t = new t(this.val);
 			if (this.val == null)
 			{
+				t new_t = new t(this.val);
 				new_t.val = val;
+				return new_t;
 			}
-			return new_t;
+			else
+			{
+				return this;
+			}
 		}
 
 		public t f_def_set(object val)
@@ -803,7 +812,7 @@ namespace kibicom.tlib
 		//массив цепочек
 		static t chain_arr = new t();
 
-		public t f_chain(t args)
+		static public t f_chain(t args)
 		{
 			string seq_name = args["seq_name"].f_def("main").f_str();
 			bool async = args["async"].f_def(false).f_val<bool>();
@@ -832,6 +841,21 @@ namespace kibicom.tlib
 			//вызываем первую функцию цепочки
 			chain["items"][index].f_f().Invoke(args);
 
+			return null;
+		}
+
+		static public t f_chain_next(string chain_name)
+		{
+			//текущая цепочка
+			t chain = chain_arr[chain_name];
+
+			//текущая функция для вызова
+			int index = chain["current_index"].f_def(0).f_val<int>();
+
+			//вызываем следующую функцию
+			chain["items"][index++].f_f().Invoke(new t());
+
+			chain["current_index"].f_val(index);
 
 			return null;
 		}
