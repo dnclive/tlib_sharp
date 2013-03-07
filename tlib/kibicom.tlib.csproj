@@ -46,11 +46,11 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="kibicom.tlib.cs" />
-    <Compile Include="kibicom.t_msslq_cli.cs" />
-    <Compile Include="kibicom.t_oledb_cli.cs" />
-    <Compile Include="kibicom.t_sql_builder.cs" />
-    <Compile Include="kibicom.t_uti.cs" />
+    <Compile Include="tlib.cs" />
+    <Compile Include="t_msslq_cli.cs" />
+    <Compile Include="t_oledb_cli.cs" />
+    <Compile Include="t_sql_builder.cs" />
+    <Compile Include="t_uti.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
