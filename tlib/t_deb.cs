@@ -2,24 +2,64 @@
 using System.Collections.Generic;
 using System.Text;
 using System.IO;
+using System.Diagnostics;
 
 namespace kibicom.tlib
 {
 	public class t_deb:t
 	{
 
-		public t_deb f_set_deb_group(string group)
-		{
-			this["deb_group"] = new t(group);
+		static t args=new t();
 
-			return this;
+		static public t f_set_deb_group(string group)
+		{
+			t_deb.args["deb_group"] = new t(group);
+
+			return null;
+		}
+		
+		static public t f_set_context_info(t args)
+		{
+			t res=new t()
+			{
+				{"show_file", t_deb.args["show_file"].f_set(args["show_file"].f_def(true).f_val()).f_val<bool>()},
+				{"show_f_name", t_deb.args["show_f_name"].f_set(args["show_f_name"].f_def(true).f_val()).f_val<bool>()},
+				{"show_line", t_deb.args["show_line"].f_set(args["show_line"].f_def(true).f_val()).f_val<bool>()},
+			};
+			
+			return res;
 		}
 
-		public t_deb tdeb_fdeb3(string group, string file, int line, string fmt, params object[] args)
-		{		
-			string deb_group=this["deb_group"].f_def_set("main").f_str();
+		static public t f_deb(string group, string fmt, params object[] args)
+		{
+			string deb_group = t_deb.args["deb_group"].f_def_set("main").f_str();
+
+			bool show_file=t_deb.args["show_file"].f_def_set("true").f_val<bool>();
+			bool show_f_name = t_deb.args["show_f_name"].f_def_set("true").f_val<bool>();
+			bool show_line=t_deb.args["show_line"].f_def_set("true").f_val<bool>();
+
+			if (group != deb_group) return null;
+
+			StackFrame callStack = new StackFrame(1, true);
+
+			string info_fmt = (show_file ? "{0}:" : "") + (show_f_name ? "{1}:" : "") + (show_line ? "{2}" : "");
+
+
+			Console.WriteLine(info_fmt, callStack.GetFileName(), callStack.GetMethod(), callStack.GetFileLineNumber());
+
+			Console.WriteLine(fmt, args);
 			
-			if (group!=deb_group) return this;
+			return null;
+		}
+
+
+		static public t f_deb3(string group, string file, int line, string fmt, params object[] args)
+		{
+			string deb_group = t_deb.args["deb_group"].f_def_set("main").f_str();
+			
+			if (group!=deb_group) return null;
+
+			StackFrame callStack = new StackFrame(1, true);
 
 			//va_list ap;        /* указывает на очередной безымянный аргумент */ 
 			//char *p, *sval;
@@ -31,8 +71,11 @@ namespace kibicom.tlib
 			//printf("%s:%i:", file, line);	//вывод файла и номера строки в которых 
 											//вызвано отладочное сообщение
 
-			Console.WriteLine("%s:%i", file, line);
+			Console.WriteLine("{0}:{1}", file, line);
 
+			Console.WriteLine(fmt,args);
+
+			return null;
 			//va_start(ap, fmt); /* устанавливает ap на 1-й безымянный аргумент */ 
 			//for (p=fmt; *p; p++)
 			int i=0;
@@ -88,12 +131,12 @@ namespace kibicom.tlib
 			}
 			//va_end(ap); /* очистка, когда все сделано */
 
-			return this; 
+			return null; 
 		}
 
-		public string f_deb_group()
+		static public string f_deb_group()
 		{
-			return this["deb_group"].f_def_set("main").f_str();
+			return t_deb.args["deb_group"].f_def_set("main").f_str();
 		}
 	}
 }
