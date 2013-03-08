@@ -318,15 +318,21 @@ namespace kibicom.tlib
 			return false;
 		}
 
-		//задать значение
+		//задать значение элемента
 		public t f_set(string key, object val)
 		{
-			MessageBox.Show(val.GetType().Name);
 			if (val.GetType().Name != "System.t")
 			{
 				val = new t(val);
 			}
 			this[key] = (t)val;
+			return this;
+		}
+
+		//задать свое значение val
+		public t f_set(object val)
+		{
+			this.val = val;
 			return this;
 		}
 
