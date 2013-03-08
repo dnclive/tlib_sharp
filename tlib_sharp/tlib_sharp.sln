@@ -3,6 +3,8 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Express 2012 for Windows Desktop
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "kibicom.tlib", "..\tlib\kibicom.tlib.csproj", "{34281226-04DC-4EFD-B765-4AE4ACEC101D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "tlib_deb", "..\tlib_deb\tlib_deb.csproj", "{EFDF6FD7-26E6-4D5B-9FC2-AD9D657BD0EC}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -13,6 +15,10 @@ Global
 		{34281226-04DC-4EFD-B765-4AE4ACEC101D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{34281226-04DC-4EFD-B765-4AE4ACEC101D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{34281226-04DC-4EFD-B765-4AE4ACEC101D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EFDF6FD7-26E6-4D5B-9FC2-AD9D657BD0EC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EFDF6FD7-26E6-4D5B-9FC2-AD9D657BD0EC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EFDF6FD7-26E6-4D5B-9FC2-AD9D657BD0EC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EFDF6FD7-26E6-4D5B-9FC2-AD9D657BD0EC}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
