@@ -244,6 +244,10 @@ namespace kibicom.tlib
 			{
 				return "'" + dr[cl.ColumnName].ToString() + "'";
 			}
+			if (cl.DataType== typeof(System.Byte[]))
+			{
+				return "'" + "0x" + BitConverter.ToString((byte[])dr[cl.ColumnName]).Replace("-", "") + "'";
+			}
 			else
 			{
 				throw new Exception("f_db_val " + cl.DataType + " not processing");
