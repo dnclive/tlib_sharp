@@ -387,6 +387,32 @@ namespace kibicom.tlib
 
 		#endregion получение значения
 
+		#region работа с val int
+
+		public t f_inc()
+		{
+			if (val.GetType().Name == "System.Int")
+			{
+				var int_val = (int)this.val;
+				int_val++;
+				this.val = int_val;
+			}
+			return this;
+		}
+
+		public t f_dec()
+		{
+			if (val.GetType().Name == "System.Int")
+			{
+				var int_val = (int)this.val;
+				int_val--;
+				this.val = int_val;
+			}
+			return this;
+		}
+
+		#endregion работа с val int
+
 		#region implicit преобразование
 		/*
 		public static implicit operator t(object val)
