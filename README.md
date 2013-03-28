@@ -17,6 +17,6 @@ Tlib несет с собой определенный стиль написан
 t f_name (t args)
 {
 
-    return new t();
+	return new t();
 }
 ```
