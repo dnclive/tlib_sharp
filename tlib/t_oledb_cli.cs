@@ -350,7 +350,7 @@ namespace kibicom.tlib
 				//break;
 				oper_dr_cnt++;
 
-				t.f_f("f_each", args.f_add(true, new t()
+				t.f_f("f_each", args.f_dub_mix(true, new t()
 				{
 					{"query", ins_dr_sql}
 				}));
@@ -366,6 +366,23 @@ namespace kibicom.tlib
 			}));
 
 			return query;
+		}
+
+		public t f_dispose(t args)
+		{
+			OleDbConnection conn = f_connect(args)["sql_conn"].f_val<OleDbConnection>();
+
+			if (conn == null)
+			{
+				return new t();
+			}
+
+			if (conn.State == ConnectionState.Open)
+			{
+				conn.Close();
+			}
+
+			return new t();
 		}
 
 	}

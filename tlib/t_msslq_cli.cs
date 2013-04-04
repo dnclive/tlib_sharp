@@ -339,6 +339,23 @@ namespace kibicom.tlib
 			return query;
 		}
 
+		public t f_dispose(t args)
+		{
+			SqlConnection conn = this["sql_conn"].f_val<SqlConnection>();
+
+			if (conn == null)
+			{
+				return new t();
+			}
+
+			if (conn.State == ConnectionState.Open)
+			{
+				conn.Close();
+			}
+
+			return new t();
+		}
+
 		/*
 		public void f_2_store(DataTable tab, string id_key)
 		{

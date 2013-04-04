@@ -125,6 +125,11 @@ namespace kibicom.tlib
 
 		}
 
+		public t f_dub_mix(bool replace, t val)
+		{
+			return new t().f_add(true, this).f_add(replace, val);
+		}
+
 		/// <summary>
 		/// <para>replace current value if passed val is not null</para>
 		/// <para>_</para>
