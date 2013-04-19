@@ -276,7 +276,7 @@ namespace kibicom.tlib
 		//значение по умолчанию
 		public t f_def(object val)
 		{
-			if (this.val == null||this.val_arr.Count==0||this.key_val_arr.Count==0)
+			if (this.val == null&&this.val_arr.Count==0&&this.key_val_arr.Count==0)
 			{
 				t new_t = new t(this.val);
 				new_t.val = val;
