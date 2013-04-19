@@ -276,7 +276,7 @@ namespace kibicom.tlib
 		//значение по умолчанию
 		public t f_def(object val)
 		{
-			if (this.val == null)
+			if (this.val == null||this.val_arr.Count==0||this.key_val_arr.Count==0)
 			{
 				t new_t = new t(this.val);
 				new_t.val = val;
@@ -389,6 +389,56 @@ namespace kibicom.tlib
 			return (bool)val;
 		}
 
+
+		/*** возврат значений ***/
+
+		public t f_last()
+		{
+			if (val_arr.Count==0)
+			{
+				return new t();
+			}
+			else
+			{
+				return val_arr[val_arr.Count - 1];
+			}
+		}
+
+		public t f_last(int count)
+		{
+			if (val_arr.Count<count)
+			{
+				return new t().f_add(true, this);
+			}
+			else
+			{
+				t last_list=new t();
+				int i=val_arr.Count-count;
+				while(i<val_arr.Count-1)
+				{
+					last_list.Add(this[i]);
+				}
+				return last_list;
+			}
+		}
+
+		public t f_top(int count)
+		{
+			if (val_arr.Count < count)
+			{
+				return new t().f_add(true, this);
+			}
+			else
+			{
+				t last_list = new t();
+				int i = 0;
+				while (i < count-1)
+				{
+					last_list.Add(this[i]);
+				}
+				return last_list;
+			}
+		}
 
 		#endregion получение значения
 
