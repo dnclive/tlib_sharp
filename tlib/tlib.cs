@@ -575,7 +575,7 @@ namespace kibicom.tlib
 		{
 			get
 			{
-				return key_val_arr.Count;
+				return val_arr.Count+key_val_arr.Count;
 			}
 		}
 
