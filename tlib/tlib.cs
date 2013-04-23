@@ -76,7 +76,7 @@ namespace kibicom.tlib
 
 		public t()
 		{
-
+			
 		}
 
 		public t(object val)
@@ -498,6 +498,16 @@ namespace kibicom.tlib
 			foreach (string key in key_arr)
 			{
 				Remove(key);
+			}
+
+			return this;
+		}
+
+		public t f_drop(t item)
+		{
+			foreach (KeyValuePair<string, t> key_val_item in (IDictionary<string, t>)val)
+			{
+
 			}
 
 			return this;
