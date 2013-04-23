@@ -216,12 +216,16 @@ namespace kibicom.tlib
 
 			try
 			{
+				if (val == null)
+				{
+					return default(T);
+				}
 				return (T)val;
 			}
 			catch (Exception ex)
 			{
 
-				ex.Data.Add("t", this);
+				ex.Data.Add("t", this.ToString());
 				ex.Data.Add("val", val);
 				ex.Data.Add("args", ex);
 				//MessageBox.Show(val.ToString() + "\r\n"+ex.Message);
@@ -326,18 +330,42 @@ namespace kibicom.tlib
 		//задать значение элемента
 		public t f_set(string key, object val)
 		{
-			if (val.GetType().Name != "System.t")
+			if (val.GetType().ToString() == "kibicom.tlib.t")
 			{
-				val = new t(val);
+				this[key].val = ((t)val).val;
+				this[key].f = ((t)val).f;
+				this[key].key_val_arr = ((t)val).key_val_arr;
+				this[key].val_arr = ((t)val).val_arr;
 			}
-			this[key] = (t)val;
+			else if (val.GetType().ToString().Contains("kibicom.tlib.t_f"))
+			{
+				this[key].f = (t_f<t, t>)val;
+			}
+			else
+			{
+				this[key].val = val;
+			}
 			return this;
 		}
 
 		//задать свое значение val
 		public t f_set(object val)
 		{
-			this.val = val;
+			if (val.GetType().ToString() == "kibicom.tlib.t")
+			{
+				this.val = ((t)val).val;
+				this.f = ((t)val).f;
+				this.key_val_arr = ((t)val).key_val_arr;
+				this.val_arr = ((t)val).val_arr;
+			}
+			else if (val.GetType().ToString().Contains("kibicom.tlib.t_f"))
+			{
+				this.f = (t_f<t,t>)val;
+			}
+			else
+			{
+				this.val = val;
+			}
 			return this;
 		}
 
@@ -599,7 +627,17 @@ namespace kibicom.tlib
 
 		public void Add(string key, t val)
 		{
-			key_val_arr.Add(key, val);
+			//проверяем тип поскольку
+			//типы наследованные от t при инициализации объекта
+			//будут добавляться через этот метод
+			if (val.GetType().ToString() == "kibicom.tlib.t")
+			{
+				key_val_arr.Add(key, val);
+			}
+			else
+			{
+				key_val_arr.Add(key, new t(val));
+			}
 		}
 
 		public void Add(string key, object val)
