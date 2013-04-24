@@ -470,6 +470,35 @@ namespace kibicom.tlib
 
 		#endregion получение значения
 
+		#region сравнение
+
+		//перегружаем сравнение двух объектов по ссылкам
+		//равны только если равны ссылки
+		public static bool operator ==(t a, t b)
+		{
+			// If both are null, or both are same instance, return true.
+			if (System.Object.ReferenceEquals(a, b))
+			{
+				return true;
+			}
+
+			// If one is null, but not both, return false.
+			if (((object)a == null) || ((object)b == null))
+			{
+				return false;
+			}
+
+			//если не равны ссылки объекты считаются не равными
+			return false;
+		}
+
+		public static bool operator !=(t a, t b)
+		{
+			return !(a == b);
+		}
+
+		#endregion сравнение
+
 		#region работа с val int
 
 		public t f_inc()
@@ -483,12 +512,34 @@ namespace kibicom.tlib
 			return this;
 		}
 
+		public t f_inc(int n)
+		{
+			if (val.GetType().Name == "System.Int")
+			{
+				var int_val = (int)this.val;
+				int_val+=n;
+				this.val = int_val;
+			}
+			return this;
+		}
+
 		public t f_dec()
 		{
 			if (val.GetType().Name == "System.Int")
 			{
 				var int_val = (int)this.val;
 				int_val--;
+				this.val = int_val;
+			}
+			return this;
+		}
+		
+		public t f_dec(int n)
+		{
+			if (val.GetType().Name == "System.Int")
+			{
+				var int_val = (int)this.val;
+				int_val-=n;
 				this.val = int_val;
 			}
 			return this;
@@ -533,9 +584,25 @@ namespace kibicom.tlib
 
 		public t f_drop(t item)
 		{
-			foreach (KeyValuePair<string, t> key_val_item in (IDictionary<string, t>)val)
+			foreach (KeyValuePair<string, t> key_val_item in (IDictionary<string, t>)key_val_arr)
 			{
-
+				if (key_val_item.Value == item)
+				{
+					key_val_arr.Remove(key_val_item.Key);
+					//key_val_arr[key_val_item.Key] = new t();
+					return this;
+				}
+			}
+			int i = 0;
+			foreach (t val_item in (IList<t>)val_arr)
+			{
+				if (val_item == item)
+				{
+					val_arr.Remove(item);
+					//val_arr[i] = new t();
+					return this;
+				}
+				i++;
 			}
 
 			return this;
