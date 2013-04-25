@@ -64,10 +64,11 @@ namespace kibicom.tlib
 
 		//флаг определяющий тип текущего объекта массив, структура, значение, функция
 		//на данный момент не используется...
-		bool is_struct;
-		bool is_array;
-		bool is_val;
-		bool is_f;
+		bool is_struct=false;
+		bool is_array = false;
+		bool is_val = false;
+		bool is_f = false;
+		bool is_base_on_t = false;
 
 		//true если данных t не несет значения
 		bool is_val_empty = true;
@@ -196,12 +197,44 @@ namespace kibicom.tlib
 			return (t_f<t, t>)f;
 		}
 
+		private bool _f_base_on_t(Type T)
+		{
+			if (T.BaseType == typeof(t))
+			{
+				return true;
+			}
+			else if (T.BaseType == typeof(object))
+			{
+				return false;
+			}
+			else
+			{
+				return _f_base_on_t(T.BaseType);
+			}
+		}
+
 		/*возвращает объект*/
 		public T f_val<T>()
 		{
 			//if (val == null) return val;
 			//MessageBox.Show(typeof(T).ToString());
-			if (typeof(T).ToString() == "System.Boolean")
+			//если тип приведения унаследован от t в каком либо из поколений.
+			Type t = this.GetType();
+			//возвращаем себя
+			if (typeof(T) == this.GetType())
+			{
+				//return (this.GetType())this;
+				return (T)Convert.ChangeType(this, typeof(T));
+			}
+			
+			else if (_f_base_on_t(typeof(T)) || typeof(T)==typeof(t) ||is_base_on_t)
+			{
+				//пока решения для этого случая не нашел
+				//return (T)this;
+				//Type t = this.GetType();
+				return (T)Convert.ChangeType(this, typeof(T));
+			}
+			else if (typeof(T).ToString() == "System.Boolean")
 			{
 				if (val == null || val.ToString() == "False")
 				{
@@ -284,6 +317,12 @@ namespace kibicom.tlib
 			{
 				t new_t = new t(this.val);
 				new_t.val = val;
+				//если тип значения наследован от t
+				//возвращаем объект этого типа
+				if (_f_base_on_t(val.GetType()))
+				{
+					Convert.ChangeType(new_t, val.GetType());
+				}
 				return new_t;
 			}
 			else
@@ -298,6 +337,12 @@ namespace kibicom.tlib
 			{
 				t new_t = new t(this.val);
 				new_t.val = val;
+				//если тип значения наследован от t
+				//возвращаем объект этого типа
+				if (_f_base_on_t(val.GetType()))
+				{
+					Convert.ChangeType(new_t, val.GetType());
+				}
 				return new_t;
 			}
 			else
@@ -330,12 +375,14 @@ namespace kibicom.tlib
 		//задать значение элемента
 		public t f_set(string key, object val)
 		{
-			if (val.GetType().ToString() == "kibicom.tlib.t")
+			//if (val.GetType().ToString() == "kibicom.tlib.t")
+			if (_f_base_on_t(val.GetType()) || val.GetType() == typeof(t))
 			{
-				this[key].val = ((t)val).val;
-				this[key].f = ((t)val).f;
-				this[key].key_val_arr = ((t)val).key_val_arr;
-				this[key].val_arr = ((t)val).val_arr;
+				this[key] = (t)val;
+				//this[key].val = ((t)val).val;
+				//this[key].f = ((t)val).f;
+				//this[key].key_val_arr = ((t)val).key_val_arr;
+				//this[key].val_arr = ((t)val).val_arr;
 			}
 			else if (val.GetType().ToString().Contains("kibicom.tlib.t_f"))
 			{
@@ -351,16 +398,32 @@ namespace kibicom.tlib
 		//задать свое значение val
 		public t f_set(object val)
 		{
-			if (val.GetType().ToString() == "kibicom.tlib.t")
+			if (val == null)
+			{
+				this.val = null;
+				this.f = null;
+				this.key_val_arr.Clear();
+				this.val_arr.Clear();
+			}
+			else if (val.GetType() == typeof(t))
 			{
 				this.val = ((t)val).val;
 				this.f = ((t)val).f;
 				this.key_val_arr = ((t)val).key_val_arr;
 				this.val_arr = ((t)val).val_arr;
 			}
+			else if (_f_base_on_t(val.GetType()))
+			{
+				this.val = ((t)val).val;
+				this.f = ((t)val).f;
+				this.key_val_arr = ((t)val).key_val_arr;
+				this.val_arr = ((t)val).val_arr;
+				Convert.ChangeType(this, val.GetType());
+			}
+
 			else if (val.GetType().ToString().Contains("kibicom.tlib.t_f"))
 			{
-				this.f = (t_f<t,t>)val;
+				this.f = (t_f<t, t>)val;
 			}
 			else
 			{
@@ -621,7 +684,7 @@ namespace kibicom.tlib
 
 				if (key_val_arr.ContainsKey(key))
 				{
-					return (t)key_val_arr[key];
+					return key_val_arr[key];
 				}
 				else
 				{
@@ -641,13 +704,14 @@ namespace kibicom.tlib
 
 				//если тим значения не tlib.t
 				//преобразуем к нему
-				if (value.GetType().ToString() != "kibicom.tlib.t")
+				//if (value.GetType().ToString() != "kibicom.tlib.t")
+				if (_f_base_on_t(value.GetType()) || value.GetType() == typeof(t))
 				{
-					tval = new t(value);
+					tval = value;
 				}
 				else
 				{
-					tval = value;
+					tval = new t(value);
 				}
 				if (key_val_arr.ContainsKey(key))
 				{
@@ -697,14 +761,16 @@ namespace kibicom.tlib
 			//проверяем тип поскольку
 			//типы наследованные от t при инициализации объекта
 			//будут добавляться через этот метод
-			if (val.GetType().ToString() == "kibicom.tlib.t")
+			if (val.GetType() == typeof(t))
 			{
-				key_val_arr.Add(key, val);
+				val.is_base_on_t = true;
+				//key_val_arr.Add(key, val);
 			}
 			else
 			{
-				key_val_arr.Add(key, new t(val));
+				//key_val_arr.Add(key, new t(val));
 			}
+			key_val_arr.Add(key, val);
 		}
 
 		public void Add(string key, object val)
