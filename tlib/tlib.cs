@@ -219,7 +219,7 @@ namespace kibicom.tlib
 			//if (val == null) return val;
 			//MessageBox.Show(typeof(T).ToString());
 			//если тип приведения унаследован от t в каком либо из поколений.
-			Type t = this.GetType();
+			Type this_type = this.GetType();
 			//возвращаем себя
 			if (typeof(T) == this.GetType())
 			{
@@ -230,7 +230,7 @@ namespace kibicom.tlib
 			else if (_f_base_on_t(typeof(T)) || typeof(T)==typeof(t) ||is_base_on_t)
 			{
 				//пока решения для этого случая не нашел
-				//return (T)this;
+				//return (t)((T)this);
 				//Type t = this.GetType();
 				return (T)Convert.ChangeType(this, typeof(T));
 			}
@@ -317,12 +317,6 @@ namespace kibicom.tlib
 			{
 				t new_t = new t(this.val);
 				new_t.val = val;
-				//если тип значения наследован от t
-				//возвращаем объект этого типа
-				if (_f_base_on_t(val.GetType()))
-				{
-					Convert.ChangeType(new_t, val.GetType());
-				}
 				return new_t;
 			}
 			else
@@ -337,12 +331,6 @@ namespace kibicom.tlib
 			{
 				t new_t = new t(this.val);
 				new_t.val = val;
-				//если тип значения наследован от t
-				//возвращаем объект этого типа
-				if (_f_base_on_t(val.GetType()))
-				{
-					Convert.ChangeType(new_t, val.GetType());
-				}
 				return new_t;
 			}
 			else
@@ -420,7 +408,6 @@ namespace kibicom.tlib
 				this.val_arr = ((t)val).val_arr;
 				Convert.ChangeType(this, val.GetType());
 			}
-
 			else if (val.GetType().ToString().Contains("kibicom.tlib.t_f"))
 			{
 				this.f = (t_f<t, t>)val;
@@ -566,7 +553,7 @@ namespace kibicom.tlib
 
 		public t f_inc()
 		{
-			if (val.GetType().Name == "System.Int")
+			if (val.GetType()==typeof(int))
 			{
 				var int_val = (int)this.val;
 				int_val++;
@@ -577,7 +564,7 @@ namespace kibicom.tlib
 
 		public t f_inc(int n)
 		{
-			if (val.GetType().Name == "System.Int")
+			if (val.GetType() == typeof(int))
 			{
 				var int_val = (int)this.val;
 				int_val+=n;
@@ -588,7 +575,7 @@ namespace kibicom.tlib
 
 		public t f_dec()
 		{
-			if (val.GetType().Name == "System.Int")
+			if (val.GetType() == typeof(int))
 			{
 				var int_val = (int)this.val;
 				int_val--;
@@ -599,7 +586,7 @@ namespace kibicom.tlib
 		
 		public t f_dec(int n)
 		{
-			if (val.GetType().Name == "System.Int")
+			if (val.GetType() == typeof(int))
 			{
 				var int_val = (int)this.val;
 				int_val-=n;
