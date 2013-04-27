@@ -938,6 +938,7 @@ namespace kibicom.tlib
 
 		#region функции обратного вызова
 
+		/*
 		public static void f_f(string f_name, t args)
 		{
 			if (args == null) return;
@@ -945,6 +946,16 @@ namespace kibicom.tlib
 			{
 				args[f_name].f_f<t_f<t, t>>()(args);
 			}
+		}
+		*/
+		public static t f_f(string f_name, t args)
+		{
+			if (args == null) return new t();
+			if (args[f_name].f_f<t_f<t, t>>() != null)
+			{
+				return args[f_name].f_f<t_f<t, t>>()(args);
+			}
+			return new t();
 		}
 
 		public static void f_f(t_f<t, t> f, t args)
