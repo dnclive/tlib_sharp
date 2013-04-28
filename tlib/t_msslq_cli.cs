@@ -44,9 +44,9 @@ namespace kibicom.tlib
 
 			SqlConnection conn = this["sql_conn"].f_def_set(args["conn"].f_val<SqlConnection>()).f_def(new SqlConnection()).f_val<SqlConnection>();
 
-			bool reconnect = args["reconnect"].f_def(this["reconnect"].f_str()).f_def(true).f_val<bool>();
+			bool reconnect = args["reconnect"].f_def(this["reconnect"].f_str()).f_def(true).f_bool();
 
-			bool is_connected=this["is_connected"].f_def(false).f_val<bool>();
+			bool is_connected=this["is_connected"].f_def(false).f_bool();
 
 			//если подключение содержит строку подключения и нельзя переподключаться то считаем что уже подключены
 			if (conn.ConnectionString != ""&& !reconnect)
@@ -212,7 +212,7 @@ namespace kibicom.tlib
 
 
 			//если соединиться не удалось вызываем fail и прекращаем работу
-			if (!this["is_connected"].f_val<bool>())
+			if (!this["is_connected"].f_bool())
 			{
 				t.f_f(args["f_fail"].f_f(), args.f_add(false, this));
 				return;

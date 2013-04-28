@@ -216,25 +216,48 @@ namespace kibicom.tlib
 		/*возвращает объект*/
 		public T f_val<T>()
 		{
+			try
+			{
+			
+
+
 			//if (val == null) return val;
 			//MessageBox.Show(typeof(T).ToString());
 			//если тип приведения унаследован от t в каком либо из поколений.
-			Type this_type = this.GetType();
+			//Type this_type = this.GetType();
 			//возвращаем себя
+			
 			if (typeof(T) == this.GetType())
 			{
 				//return (this.GetType())this;
 				return (T)Convert.ChangeType(this, typeof(T));
 			}
-			
-			else if (_f_base_on_t(typeof(T)) || typeof(T)==typeof(t) ||is_base_on_t)
+			else if (val == null)
 			{
-				//пока решения для этого случая не нашел
-				//return (t)((T)this);
-				//Type t = this.GetType();
-				return (T)Convert.ChangeType(this, typeof(T));
+				return default(T);
 			}
-			else if (typeof(T).ToString() == "System.Boolean")
+			else if (typeof(T) == val.GetType())
+			{
+				return (T)Convert.ChangeType(val, typeof(T));
+			}
+			else
+			{
+				return (T)val;
+			}
+
+			//else if (typeof(T).ToString().Contains(".t")||typeof(T)==typeof(t) ||is_base_on_t)
+			/*
+		else if (_f_base_on_t(typeof(T)) || typeof(T)==typeof(t) ||is_base_on_t)
+		{
+			MessageBox.Show(typeof(T).ToString());
+			//пока решения для этого случая не нашел
+			//return (t)((T)this);
+			//Type t = this.GetType();
+			return (T)Convert.ChangeType(this, typeof(T));
+		}
+			*/
+				/*
+			if (typeof(T) == typeof(bool))
 			{
 				if (val == null || val.ToString() == "False")
 				{
@@ -247,13 +270,13 @@ namespace kibicom.tlib
 
 			}
 
-			try
-			{
+			
 				if (val == null)
 				{
 					return default(T);
 				}
 				return (T)val;
+				*/
 			}
 			catch (Exception ex)
 			{
@@ -303,6 +326,7 @@ namespace kibicom.tlib
 			//t_val<tp3> new_val=new t_val<tp3>(val);
 			return val;
 		}
+
 
 		public T f_val<T>(T val)
 		{
@@ -428,7 +452,7 @@ namespace kibicom.tlib
 			{
 				return "";
 			}
-			if (val.GetType().Name == "System.String")
+			if (val.GetType() == typeof(string))
 			{
 				return (string)val;
 			}
@@ -464,7 +488,15 @@ namespace kibicom.tlib
 		/*возвращает bool*/
 		public bool f_bool()
 		{
-			return (bool)val;
+			if (val == null || val.ToString() == "False" || val.ToString() == "")
+			{
+				return false;
+			}
+			else
+			{
+				return true;
+			}
+			//return (bool)val;
 		}
 
 
@@ -909,6 +941,10 @@ namespace kibicom.tlib
 
 		public IEnumerator<t> GetEnumerator_il()
 		{
+			if (val_arr == null)
+			{
+				val_arr = new List<t>();
+			}
 			return val_arr.GetEnumerator();
 		}
 
@@ -1081,7 +1117,7 @@ namespace kibicom.tlib
 		static public t f_chain(t args)
 		{
 			string seq_name = args["seq_name"].f_def("main").f_str();
-			bool async = args["async"].f_def(false).f_val<bool>();
+			bool async = args["async"].f_def(false).f_bool();
 
 			//перебираем переданные функции
 			foreach (t f in (IList<t>)args["seq"])

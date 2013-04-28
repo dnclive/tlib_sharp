@@ -11,6 +11,8 @@ namespace kibicom.tlib
 
 		static t args=new t();
 
+		static bool debug=false;
+
 		static public t f_set_deb_group(string group)
 		{
 			t_deb.args["deb_group"] = new t(group);
@@ -22,9 +24,9 @@ namespace kibicom.tlib
 		{
 			t res=new t()
 			{
-				{"show_file", t_deb.args["show_file"].f_set(args["show_file"].f_def(true).f_val()).f_val<bool>()},
-				{"show_f_name", t_deb.args["show_f_name"].f_set(args["show_f_name"].f_def(true).f_val()).f_val<bool>()},
-				{"show_line", t_deb.args["show_line"].f_set(args["show_line"].f_def(true).f_val()).f_val<bool>()},
+				{"show_file", t_deb.args["show_file"].f_set(args["show_file"].f_def(true).f_val()).f_bool()},
+				{"show_f_name", t_deb.args["show_f_name"].f_set(args["show_f_name"].f_def(true).f_val()).f_bool()},
+				{"show_line", t_deb.args["show_line"].f_set(args["show_line"].f_def(true).f_val()).f_bool()},
 			};
 			
 			return res;
@@ -32,11 +34,12 @@ namespace kibicom.tlib
 
 		static public t f_deb(string group, string fmt, params object[] args)
 		{
+			if (!debug) return null;
 			string deb_group = t_deb.args["deb_group"].f_def_set("main").f_str();
 
-			bool show_file=t_deb.args["show_file"].f_def_set("true").f_val<bool>();
-			bool show_f_name = t_deb.args["show_f_name"].f_def_set("true").f_val<bool>();
-			bool show_line=t_deb.args["show_line"].f_def_set("true").f_val<bool>();
+			bool show_file=t_deb.args["show_file"].f_def_set("true").f_bool();
+			bool show_f_name = t_deb.args["show_f_name"].f_def_set("true").f_bool();
+			bool show_line=t_deb.args["show_line"].f_def_set("true").f_bool();
 
 			if (group != deb_group) return null;
 
@@ -55,6 +58,7 @@ namespace kibicom.tlib
 
 		static public t f_deb3(string group, string file, int line, string fmt, params object[] args)
 		{
+			if (!debug) return null;
 			string deb_group = t_deb.args["deb_group"].f_def_set("main").f_str();
 			
 			if (group!=deb_group) return null;
