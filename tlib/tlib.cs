@@ -69,6 +69,7 @@ namespace kibicom.tlib
 		bool is_val = false;
 		bool is_f = false;
 		bool is_base_on_t = false;
+		bool is_t = false;				//значение есть t или базируется на нем
 
 		//true если данных t не несет значения
 		bool is_val_empty = true;
@@ -216,21 +217,10 @@ namespace kibicom.tlib
 		/*возвращает объект*/
 		public T f_val<T>()
 		{
-			try
-			{
-			
-
-
-			//if (val == null) return val;
-			//MessageBox.Show(typeof(T).ToString());
-			//если тип приведения унаследован от t в каком либо из поколений.
-			//Type this_type = this.GetType();
-			//возвращаем себя
-			
 			if (typeof(T) == this.GetType())
+			//if (is_t)
 			{
-				//return (this.GetType())this;
-				return (T)Convert.ChangeType(this, typeof(T));
+				return (T)(object)this;
 			}
 			else if (val == null)
 			{
@@ -238,54 +228,11 @@ namespace kibicom.tlib
 			}
 			else if (typeof(T) == val.GetType())
 			{
-				return (T)Convert.ChangeType(val, typeof(T));
+				return (T)(object)val ;
 			}
 			else
 			{
 				return (T)val;
-			}
-
-			//else if (typeof(T).ToString().Contains(".t")||typeof(T)==typeof(t) ||is_base_on_t)
-			/*
-		else if (_f_base_on_t(typeof(T)) || typeof(T)==typeof(t) ||is_base_on_t)
-		{
-			MessageBox.Show(typeof(T).ToString());
-			//пока решения для этого случая не нашел
-			//return (t)((T)this);
-			//Type t = this.GetType();
-			return (T)Convert.ChangeType(this, typeof(T));
-		}
-			*/
-				/*
-			if (typeof(T) == typeof(bool))
-			{
-				if (val == null || val.ToString() == "False")
-				{
-					return (T)Convert.ChangeType(false, typeof(T));
-				}
-				else
-				{
-					return (T)Convert.ChangeType(true, typeof(T));
-				}
-
-			}
-
-			
-				if (val == null)
-				{
-					return default(T);
-				}
-				return (T)val;
-				*/
-			}
-			catch (Exception ex)
-			{
-
-				ex.Data.Add("t", this.ToString());
-				ex.Data.Add("val", val);
-				ex.Data.Add("args", ex);
-				//MessageBox.Show(val.ToString() + "\r\n"+ex.Message);
-				throw (ex);
 			}
 
 		}
@@ -372,6 +319,42 @@ namespace kibicom.tlib
 			return this;
 		}
 
+		public t f_def_set(string key, object val)
+		{
+			t tval = null;
+			if (!key_val_arr.TryGetValue(key, out tval))
+			{
+				tval = new t();
+				if (_f_base_on_t(val.GetType()) || val.GetType() == typeof(t))
+				{
+					tval = (t)val;
+				}
+				else if (val.GetType().ToString().Contains("kibicom.tlib.t_f"))
+				{
+					tval.f = (t_f<t, t>)val;
+				}
+				else
+				{
+					tval.val = val;
+				}
+				key_val_arr.Add(key, tval);
+			}
+			return this;
+		}
+
+		public t f_def(string key, object val)
+		{
+			t tval = null;
+			if (!key_val_arr.TryGetValue(key, out tval))
+			{
+				tval = new t(val);
+				key_val_arr.Add(key, tval);
+			}
+
+			return tval;
+
+		}
+
 		//значение пустое
 		//требует переработки
 		public bool f_is_empty()
@@ -390,7 +373,8 @@ namespace kibicom.tlib
 			//if (val.GetType().ToString() == "kibicom.tlib.t")
 			if (_f_base_on_t(val.GetType()) || val.GetType() == typeof(t))
 			{
-				this[key] = (t)val;
+				//this[key] = (t)val;
+				key_val_arr[key] = (t)val;
 				//this[key].val = ((t)val).val;
 				//this[key].f = ((t)val).f;
 				//this[key].key_val_arr = ((t)val).key_val_arr;
@@ -398,11 +382,11 @@ namespace kibicom.tlib
 			}
 			else if (val.GetType().ToString().Contains("kibicom.tlib.t_f"))
 			{
-				this[key].f = (t_f<t, t>)val;
+				key_val_arr[key].f = (t_f<t, t>)val;
 			}
 			else
 			{
-				this[key].val = val;
+				key_val_arr[key].val = val;
 			}
 			return this;
 		}
@@ -424,7 +408,9 @@ namespace kibicom.tlib
 				this.key_val_arr = ((t)val).key_val_arr;
 				this.val_arr = ((t)val).val_arr;
 			}
+			/*
 			else if (_f_base_on_t(val.GetType()))
+			//else if (val.GetType().ToString
 			{
 				this.val = ((t)val).val;
 				this.f = ((t)val).f;
@@ -432,6 +418,7 @@ namespace kibicom.tlib
 				this.val_arr = ((t)val).val_arr;
 				Convert.ChangeType(this, val.GetType());
 			}
+			 * */
 			else if (val.GetType().ToString().Contains("kibicom.tlib.t_f"))
 			{
 				this.f = (t_f<t, t>)val;
@@ -443,7 +430,15 @@ namespace kibicom.tlib
 			return this;
 		}
 
+		public t f_get(string key)
+		{
+			return key_val_arr[key];
+		}
 
+		public t f_get(int key)
+		{
+			return val_arr[key];
+		}
 
 		/*возвращает строку*/
 		public string f_str()
@@ -564,13 +559,6 @@ namespace kibicom.tlib
 				return true;
 			}
 
-			// If one is null, but not both, return false.
-			if (((object)a == null) || ((object)b == null))
-			{
-				return false;
-			}
-
-			//если не равны ссылки объекты считаются не равными
 			return false;
 		}
 
@@ -700,6 +688,49 @@ namespace kibicom.tlib
 			{
 				//MessageBox.Show(key_val_arr.ContainsKey(key).ToString());
 
+				/*
+				try
+				{
+					return key_val_arr[key];
+				}
+				catch (Exception ex)
+				{
+					t new_t = new t();
+					key_val_arr.Add(key, new_t);
+					return new_t;
+				}
+				*/
+
+
+				t tval = null;
+
+				//key_val_arr.TryGetValue(key, out tval);
+				//this.GetType().GetField()
+				/*
+				foreach (KeyValuePair<string, t> item in key_val_arr)
+				{
+					if (item.Key == key)
+					{
+						return item.Value;
+					}
+				}
+				*/
+				if (!key_val_arr.TryGetValue(key, out tval))
+				{
+					tval = new t();
+					key_val_arr.Add(key, tval);
+				}
+
+				/*
+				if (tval == null)
+				{
+					tval = new t();
+					key_val_arr.Add(key, tval);
+					//return new_t;
+				}
+				*/
+
+				return tval;
 
 				if (key_val_arr.ContainsKey(key))
 				{
@@ -711,6 +742,8 @@ namespace kibicom.tlib
 					key_val_arr.Add(key, new_t);
 					return new_t;
 				}
+				
+
 			}
 			set
 			{
@@ -727,6 +760,7 @@ namespace kibicom.tlib
 				if (_f_base_on_t(value.GetType()) || value.GetType() == typeof(t))
 				{
 					tval = value;
+					is_t = true;
 				}
 				else
 				{
@@ -783,6 +817,7 @@ namespace kibicom.tlib
 			if (val.GetType() == typeof(t))
 			{
 				val.is_base_on_t = true;
+				val.is_t = true;
 				//key_val_arr.Add(key, val);
 			}
 			else
@@ -803,6 +838,7 @@ namespace kibicom.tlib
 		{
 			//KeyValuePair<string, t_res> new_item=new KeyValuePair<string, t_res>(key, null);
 			//new_item.val = val;
+			is_f = true;
 			key_val_arr.Add(key, new t(f));
 		}
 
