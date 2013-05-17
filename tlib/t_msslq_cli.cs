@@ -40,7 +40,7 @@ namespace kibicom.tlib
 			string db_name = args["db_name"].f_def(this["db_name"].f_str()).f_def("").f_str();
 			string login = args["login"].f_def(this["login"].f_str()).f_def("").f_str();
 			string pass = args["pass"].f_def(this["pass"].f_str()).f_def("").f_str();
-			string timeout = args["timeout"].f_def(this["timeout"].f_str()).f_def(60).f_str();
+			string timeout = args["timeout"].f_def(this["timeout"].f_def(300).f_int()).f_str();
 
 			SqlConnection conn = this["sql_conn"].f_def_set(args["conn"].f_val<SqlConnection>()).f_def(new SqlConnection()).f_val<SqlConnection>();
 
@@ -83,6 +83,8 @@ namespace kibicom.tlib
 			
 			//создаем подключение
 			SqlConnection sql_conn = new SqlConnection(sql_conn_str);
+
+			//sql_conn.ConnectionTimeout = timeout;
 
 			//выносим в global нашего объекта
 			this["sql_conn_str"] = new t(sql_conn_str);
@@ -205,6 +207,7 @@ namespace kibicom.tlib
 			string tab_name = args["tab_name"].f_str();
 			string query = args["each"]["query"].f_str();
 			string sort = args["each"]["sort"].f_str();
+			int timeout=args["timeout"].f_def(60).f_int();
 
 			//OleDbConnection conn = f_connect(args)["sql_conn"].f_val<OleDbConnection>();
 			SqlConnection conn = f_connect(new t().f_add(true, args).f_drop(new List<string>() { "f_done", "f_fail" }))
@@ -231,6 +234,9 @@ namespace kibicom.tlib
 
 				//создаем адаптер для запроса
 				SqlDataAdapter ad = new SqlDataAdapter(cmd_text, conn);
+
+				//устанавливаем timout команды
+				ad.SelectCommand.CommandTimeout = timeout;
 
 				//создаем таблицу для результата
 				DataTable tab = new DataTable(tab_name);

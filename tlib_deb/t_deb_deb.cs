@@ -126,5 +126,51 @@ namespace kibicom.tlib_deb
 
 			return new t(){{"ut_res",ut_res}};
 		}
+
+
+		static public t f_deb_deb_3(t args)
+		{
+
+			bool ut_res = true;
+
+
+			#region ut_1
+			Console.WriteLine("UT\tmod:t_deb\tf:f_deb");
+
+			//включаем вывод сообщений только группы unit_test
+			t_deb.f_set_deb_group("unit_test");
+
+			//включаем только вывод номера строки вызова f_deb
+			t_deb.f_set_context_info(new t()
+			{
+				{"show_file", false},
+				{"show_f_name", false},
+				{"show_line", true},
+			});
+
+			t var = new t()
+			{
+				{"key1", "val1"},
+				{"key3", "val1"}
+			};
+
+			string var_json = var.f_json()["json_str"].f_str();
+
+			t_deb.f_deb("main", "{0}", var_json);
+
+			//t_deb.f_deb("unit_test", "{0}:{1}:{2}", "123", 456, 56.34);
+
+			//t_deb.f_deb("other_group", "{0}:{1}:{2}", "123", 456, 56.34);
+
+			ut_res &= true;
+
+			Console.Write("\r\n\r\n");
+
+			#endregion ut_1
+
+
+			return new t() { { "ut_res", ut_res } };
+		}
+
 	}
 }

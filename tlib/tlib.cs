@@ -46,7 +46,7 @@ namespace kibicom.tlib
 	//класс представляет собой универсальный динамический, структурируемый тип данных
 	//где каждый элемент может быть строкой, числом, массивом, структурой, функцией и тд.
 	[Serializable]
-	public class t : IDictionary<string, t>, IList<t>
+	public partial class t : IDictionary<string, t>, IList<t>
 	{
 		//массив именованных элементов (аля {key:value, key1:val1})
 		private Dictionary<string, t> key_val_arr = new Dictionary<string, t>();
