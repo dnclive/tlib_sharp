@@ -11,7 +11,12 @@ namespace kibicom.tlib
 
 		static t args=new t();
 
+//отладка влючена если отладочная версия
+#if DEBUG
+		static bool debug=true;
+#else
 		static bool debug=false;
+#endif
 
 		static public t f_set_deb_group(string group)
 		{

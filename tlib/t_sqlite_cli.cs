@@ -1,25 +1,23 @@
 ﻿using System;
 using System.Collections.Generic;
-//using System.Linq;
 using System.Text;
+using Community.CsharpSqlite.SQLiteClient;
 using System.Data;
-using System.Data.SqlClient;
-using System.Data.Sql;
-using System.Data.SqlTypes;
-using System.Data.OleDb;
-using System.Windows.Forms;
+using kibicom.tlib;
 
 namespace kibicom.tlib
 {
-	public class t_oledb_cli : t
+	public class t_sqlite_cli:t
 	{
 
-		public t_oledb_cli()
+		bool is_blocked = false;
+
+		public t_sqlite_cli()
 		{
 			this["is_connected"] = new t(false);
 		}
 
-		public t_oledb_cli(t args)
+		public t_sqlite_cli(t args)
 		{
 			f_connect(args);
 
@@ -39,9 +37,8 @@ namespace kibicom.tlib
 		/// <para>RETURN</para>
 		/// <para>good mood</para>
 		/// </summary>
-		public t_oledb_cli f_connect(t args)
+		public t_sqlite_cli f_connect(t args)
 		{
-
 			if (args == null)
 			{
 				return this;
@@ -69,19 +66,11 @@ namespace kibicom.tlib
 			}
 
 			//формируем строку подключения, без указания конкретной БД
-			string sql_conn_str = @"Provider=Microsoft.Jet.OLEDB.4.0;" +
-									@"Data Source=" +
-									(location == "" ? "" : location) + ";" +
-				//(db_file_name==""?"":db_file_name)+";"+
-									@"Extended Properties=dBASE IV;User ID=Admin;Password=;";//+
-									//@"Connect Timeout=30;";
-
-			//sql_conn_str = "Provider=SQLOLEDB;OLE DB Services=-4;Data Source="+location+";Integrated Security=SSPI;";
+			string sql_conn_str = string.Format("Version=3,uri=file:{0}", location);
 
 			//создаем подключение
-			OleDbConnection sql_conn = new OleDbConnection(sql_conn_str);
+			SqliteConnection sql_conn = new SqliteConnection(sql_conn_str);
 
-			
 
 			//выносим в global нашего объекта
 			this["sql_conn_str"] = new t(sql_conn_str);
@@ -99,10 +88,10 @@ namespace kibicom.tlib
 				sql_conn.Open();
 				this["is_connected"].f_val(true);
 
-				//if (!conn_keep_open)
+				if (!conn_keep_open)
 				{
 					sql_conn.Close();
-					//this["is_connected"].f_val(false);
+					this["is_connected"].f_val(false);
 				}
 			}
 			catch (Exception ex)
@@ -138,7 +127,7 @@ namespace kibicom.tlib
 		/// </summary>
 		public string f_set_db(t args)
 		{
-			SqlConnection conn = this["sql_conn"].f_val<SqlConnection>();
+			SqliteConnection conn = this["sql_conn"].f_val<SqliteConnection>();
 
 			//если уже установлена необходимая БД просто уходим
 			if (this["db_name"].f_str() == args["db_name"].f_str())
@@ -165,7 +154,7 @@ namespace kibicom.tlib
 		}
 
 		/// <summary>
-		/// <para>execute no queyr sql command</para>
+		/// <para>execute no query sql command</para>
 		/// <para>_</para>
 		/// <para>PARAMS</para>
 		/// <para>cmd_________________Select sql command text</para>
@@ -173,17 +162,31 @@ namespace kibicom.tlib
 		/// <para>RETURN</para>
 		/// <para></para>
 		/// </summary>
-		public t_oledb_cli f_exec_cmd(t args)
+		public t_sqlite_cli f_exec_cmd(t args)
 		{
 			string cmd_text = args["cmd"].f_str();
 			bool conn_keep_open = args["conn_keep_open"].f_def(false).f_bool();
 
-			OleDbConnection conn = f_connect(args)["sql_conn"].f_val<OleDbConnection>();
+			bool block = args["block"].f_def(false).f_bool();
+
+			if (block)
+			{
+				//f_exec_cmd - блокирующий
+				//lock (is_blocked)
+				{
+					if (!is_blocked)
+					{
+						is_blocked = true;
+					}
+				}
+			}
+
+			SqliteConnection conn = f_connect(args)["sql_conn"].f_val<SqliteConnection>();
 			//OleDbConnection conn = args["sql_conn"].f_val<OleDbConnection>();
 
 			bool is_connected = this["is_connected"].f_def(false).f_bool();
 
-			OleDbCommand cmd = new OleDbCommand(cmd_text, conn);
+			SqliteCommand cmd = new SqliteCommand(cmd_text, conn);
 
 			//MessageBox.Show(is_connected.ToString());
 			//MessageBox.Show(conn_keep_open.ToString());
@@ -191,7 +194,7 @@ namespace kibicom.tlib
 			try
 			{
 				//if (!is_connected || conn.State != ConnectionState.Open)
-				if (conn.State != ConnectionState.Open)
+				//if (conn.State != ConnectionState.Open)
 				{
 					conn.Open();
 				}
@@ -199,7 +202,9 @@ namespace kibicom.tlib
 				cmd.Prepare();
 				int cmd_exec_cnt = cmd.ExecuteNonQuery();
 
-				if (!conn_keep_open)
+				string err= cmd.GetLastError();
+
+				//if (!conn_keep_open)
 				{
 					conn.Close();
 				}
@@ -212,31 +217,25 @@ namespace kibicom.tlib
 			{
 				conn.Close();
 
+				string sql_err = cmd.GetLastError();
+
 				ex.Data.Add("args", args);
 
 				t.f_f(args["f_fail"].f_f(), args.f_add(true, new t() 
 				{ 
-					{ "message", "connection failed" },
+					{ "message", sql_err },
 					{ "ex", ex}
 				}));
+
 			}
 
 			//chb_db.Items.Add();
 
+			is_blocked = false;
+
 			return this;
 		}
 
-		/// <summary>
-		/// <para>execute select query and return DataTable</para>
-		/// <para>_</para>
-		/// <para>PARAMS</para>
-		/// <para>cmd_________________Select sql command text</para>
-		/// <para>tab_name____________Name for returning table</para>
-		/// <para>f_done______________Callback function</para>
-		/// <para>_</para>
-		/// <para>RETURN</para>
-		/// <para>tab_________________requested table</para>
-		/// </summary>
 		public void f_select(t args)
 		{
 
@@ -245,22 +244,20 @@ namespace kibicom.tlib
 			string query = args["each"]["query"].f_str();
 			string sort = args["each"]["sort"].f_str();
 
-			SqlConnection conn = this["sql_conn"].f_val<SqlConnection>();
+			SqliteConnection conn = this["sql_conn"].f_val<SqliteConnection>();
 
 			//t_f<t, t> f_done = args["f_done"].f_f<t_f>();
 
-
-
-
-			conn.Open();
+			//conn.Open();
 
 			//выбираем нужную БД
 			f_set_db(args);
 
 			Console.WriteLine(conn.Database);
 
-			//создаем адаптек для запроса
-			SqlDataAdapter ad = new SqlDataAdapter(cmd_text, conn);
+			//создаем адаптер для запроса
+			SqliteDataAdapter ad = new SqliteDataAdapter(cmd_text, conn);
+
 
 			//создаем таблицу для результата
 			DataTable tab = new DataTable(tab_name);
@@ -268,7 +265,7 @@ namespace kibicom.tlib
 			//получаем данные, заполняем таблицу
 			ad.Fill(tab);
 
-			conn.Close();
+			//conn.Close();
 
 			//вкидываем в принятые параметры полеченную таблицу и возвращаем результат
 			//в функцию обратного вызова
@@ -307,83 +304,6 @@ namespace kibicom.tlib
 			return;
 		}
 
-		public string f_make_ins_query(t args)
-		{
-			DataTable tab = args["tab"].f_def(new DataTable()).f_val<DataTable>();
-			string tab_name = args["tab_name"].f_def("").f_str();
-
-			//string set_date_format_sql = "SET DATEFORMAT ymd \r\n";
-			//string set_language_sql = "SET LANGUAGE Russian \r\n";
-			string ins_sql_str = "";
-			string vals = "";
-			int oper_dr_cnt = 0;
-			foreach (DataRow dr in tab.Rows)
-			{
-				//insert _table_name_
-				string ins_dr_sql = " insert into " + tab_name;
-
-
-
-
-				//собираем имена колонок таблицы
-				// ( col1, col2, col3...)
-				vals = "";
-				foreach (DataColumn cl in tab.Columns)
-				{
-					vals = t_uti.fjoin(vals, ',', cl.ColumnName);
-				}
-				ins_dr_sql += " ( " + vals + " ) ";
-				//MessageBox.Show(vals);
-				//собираем значения
-				// values ( val1, val2, val3...)
-				vals = "";
-				foreach (DataColumn cl in tab.Columns)
-				{
-					vals = t_uti.fjoin(vals, ',', t_sql_builder.f_db_val(dr, cl));
-				}
-
-				ins_dr_sql += " values ( " + vals + " ) ; ";
-
-				ins_sql_str += ins_dr_sql + " \r\n";
-				//MessageBox.Show(vals);
-				//MessageBox.Show(ins_sql_str);
-				//break;
-				oper_dr_cnt++;
-
-				t.f_f("f_each", args.f_dub_mix(true, new t()
-				{
-					{"query", ins_dr_sql}
-				}));
-
-			}
-
-			//string query = set_date_format_sql + set_language_sql + ins_sql_str;
-			string query = ins_sql_str;
-
-			t.f_f("f_done", args.f_add(true, new t()
-			{
-				{"query", query}
-			}));
-
-			return query;
-		}
-
-		public t f_dispose(t args)
-		{
-			OleDbConnection conn = f_connect(args)["sql_conn"].f_val<OleDbConnection>();
-
-			if (conn == null)
-			{
-				return new t();
-			}
-
-			if (conn.State == ConnectionState.Open)
-			{
-				conn.Close();
-			}
-
-			return new t();
-		}
 
 	}
 }

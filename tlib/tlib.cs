@@ -865,6 +865,7 @@ namespace kibicom.tlib
 		public void Clear()
 		{
 			key_val_arr.Clear();
+			val_arr.Clear();
 		}
 
 		public bool ContainsKey(string key)
