@@ -172,7 +172,7 @@ namespace kibicom.tlib
 			if (block)
 			{
 				//f_exec_cmd - блокирующий
-				//lock (is_blocked)
+				lock (this)
 				{
 					if (!is_blocked)
 					{
@@ -199,7 +199,7 @@ namespace kibicom.tlib
 					conn.Open();
 				}
 
-				cmd.Prepare();
+				//cmd.Prepare();
 				int cmd_exec_cnt = cmd.ExecuteNonQuery();
 
 				string err= cmd.GetLastError();
