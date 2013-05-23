@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Data;
 
-namespace kibicom.tlib
+namespace kibicom.tlib.data_store_cli
 {
 	class t_sql_builder
 	{

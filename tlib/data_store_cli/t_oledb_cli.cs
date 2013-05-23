@@ -9,9 +9,9 @@ using System.Data.SqlTypes;
 using System.Data.OleDb;
 using System.Windows.Forms;
 
-namespace kibicom.tlib
+namespace kibicom.tlib.data_store_cli
 {
-	public class t_oledb_cli : t
+	public class t_oledb_cli : t_sql_store_cli
 	{
 
 		public t_oledb_cli()
@@ -39,7 +39,7 @@ namespace kibicom.tlib
 		/// <para>RETURN</para>
 		/// <para>good mood</para>
 		/// </summary>
-		public t_oledb_cli f_connect(t args)
+		public override t_sql_store_cli f_connect(t args)
 		{
 
 			if (args == null)
@@ -136,14 +136,14 @@ namespace kibicom.tlib
 		/// <para>RETURN</para>
 		/// <para>good mood</para>
 		/// </summary>
-		public string f_set_db(t args)
+		public override t_sql_store_cli f_set_db(t args)
 		{
 			SqlConnection conn = this["sql_conn"].f_val<SqlConnection>();
 
 			//если уже установлена необходимая БД просто уходим
 			if (this["db_name"].f_str() == args["db_name"].f_str())
 			{
-				return this["db_name"].f_str();
+				return this;
 			}
 
 			Console.WriteLine("this:" + this["db_name"].f_str());
@@ -161,7 +161,7 @@ namespace kibicom.tlib
 				conn.ChangeDatabase(db_name);
 			}
 
-			return db_name;
+			return this;
 		}
 
 		/// <summary>
@@ -173,7 +173,7 @@ namespace kibicom.tlib
 		/// <para>RETURN</para>
 		/// <para></para>
 		/// </summary>
-		public t_oledb_cli f_exec_cmd(t args)
+		public override t_sql_store_cli f_exec_cmd(t args)
 		{
 			string cmd_text = args["cmd"].f_str();
 			bool conn_keep_open = args["conn_keep_open"].f_def(false).f_bool();
@@ -237,7 +237,7 @@ namespace kibicom.tlib
 		/// <para>RETURN</para>
 		/// <para>tab_________________requested table</para>
 		/// </summary>
-		public void f_select(t args)
+		public override t_sql_store_cli f_select(t args)
 		{
 
 			string cmd_text = args["cmd"].f_str();
@@ -304,10 +304,10 @@ namespace kibicom.tlib
 			//вызываем f_done
 			t.f_fdone(args);
 
-			return;
+			return this;
 		}
 
-		public string f_make_ins_query(t args)
+		public override t f_make_ins_query(t args)
 		{
 			DataTable tab = args["tab"].f_def(new DataTable()).f_val<DataTable>();
 			string tab_name = args["tab_name"].f_def("").f_str();
@@ -365,10 +365,10 @@ namespace kibicom.tlib
 				{"query", query}
 			}));
 
-			return query;
+			return new t(){{"query",query}};
 		}
 
-		public t f_dispose(t args)
+		public override t f_dispose(t args)
 		{
 			OleDbConnection conn = f_connect(args)["sql_conn"].f_val<OleDbConnection>();
 

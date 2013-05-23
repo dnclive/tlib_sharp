@@ -8,10 +8,25 @@ using System.Data.Sql;
 using System.Data.SqlTypes;
 using System.Windows.Forms;
 
-namespace kibicom.tlib
+namespace kibicom.tlib.data_store_cli
 {
-	public class t_msslq_cli : t
+	public class t_msslq_cli : t_sql_store_cli
 	{
+
+		public t_msslq_cli()
+		{
+
+		}
+
+		public t_msslq_cli(t args)
+		{
+			this["server"]=args["server"].f_def("");
+			this["server_name"] = args["server_name"].f_def("");
+			this["db_name"] = args["db_name"].f_def("");
+			this["login"] = args["login"].f_def("");
+			this["pass"] = args["pass"].f_def("");
+			this["timeout"] = args["timeout"].f_def(300);
+		}
 
 		/// <summary>
 		/// <para>connect to ms sql server</para>
@@ -26,7 +41,7 @@ namespace kibicom.tlib
 		/// <para>RETURN</para>
 		/// <para>good mood</para>
 		/// </summary>
-		public t_msslq_cli f_connect(t args)
+		public override t_sql_store_cli f_connect(t args)
 		{
 
 			if (args == null)
@@ -132,14 +147,14 @@ namespace kibicom.tlib
 		/// <para>RETURN</para>
 		/// <para>good mood</para>
 		/// </summary>
-		public string f_set_db(t args)
+		public override t_sql_store_cli f_set_db(t args)
 		{
 			SqlConnection conn = this["sql_conn"].f_val<SqlConnection>();
 
 			//если уже установлена необходимая БД или не перенадна новая просто уходим
 			if (this["db_name"].f_str() == args["db_name"].f_str() || args["db_name"].f_str() == "")
 			{
-				return this["db_name"].f_str();
+				return this;
 			}
 
 			Console.WriteLine("this:" + this["db_name"].f_str());
@@ -164,7 +179,7 @@ namespace kibicom.tlib
 				}
 			}
 
-			return db_name;
+			return this;
 		}
 
 		/// <summary>
@@ -176,7 +191,7 @@ namespace kibicom.tlib
 		/// <para>RETURN</para>
 		/// <para></para>
 		/// </summary>
-		public void f_exec_cmd(t args)
+		public t_sql_store_cli f_exec_cmd_(t args)
 		{
 			string cmd_text = args["cmd"].f_str();
 			SqlConnection conn = this["sql_connection"].f_val<SqlConnection>();
@@ -184,9 +199,71 @@ namespace kibicom.tlib
 			SqlCommand cmd = new SqlCommand(cmd_text, conn);
 
 
-
+			return this;
 
 			//chb_db.Items.Add();
+		}
+		public override t_sql_store_cli f_exec_cmd(t args)
+		{
+			string cmd_text = args["cmd"].f_str();
+			bool conn_keep_open = args["conn_keep_open"].f_def(false).f_bool();
+
+			SqlConnection conn = f_connect(args)["sql_conn"].f_val<SqlConnection>();
+
+			//OleDbConnection conn = args["sql_conn"].f_val<OleDbConnection>();
+
+			bool is_connected = this["is_connected"].f_def(false).f_bool();
+
+			if (!cmd_text.ToLower().Contains("dateformat"))
+			{
+				string set_date_format_sql = "SET DATEFORMAT ymd \r\n";
+				string set_language_sql = "SET LANGUAGE Russian \r\n";
+				cmd_text=set_date_format_sql+set_language_sql+cmd_text;
+			}
+
+			SqlCommand cmd = new SqlCommand(cmd_text, conn);
+
+			//MessageBox.Show(is_connected.ToString());
+			//MessageBox.Show(conn_keep_open.ToString());
+
+			
+
+			try
+			{
+				//if (!is_connected || conn.State != ConnectionState.Open)
+				if (conn.State != ConnectionState.Open)
+				{
+					conn.Open();
+				}
+
+				cmd.Prepare();
+				int cmd_exec_cnt = cmd.ExecuteNonQuery();
+
+				if (!conn_keep_open)
+				{
+					conn.Close();
+				}
+
+				//вызываем f_done
+				t.f_fdone(args);
+
+			}
+			catch (Exception ex)
+			{
+				conn.Close();
+
+				ex.Data.Add("args", args);
+
+				t.f_f(args["f_fail"].f_f(), args.f_add(true, new t() 
+				{ 
+					{ "message", "connection failed" },
+					{ "ex", ex}
+				}));
+			}
+
+			//chb_db.Items.Add();
+
+			return this;
 		}
 
 		/// <summary>
@@ -200,7 +277,7 @@ namespace kibicom.tlib
 		/// <para>RETURN</para>
 		/// <para>tab_________________requested table</para>
 		/// </summary>
-		public void f_select(t args)
+		public override t_sql_store_cli f_select(t args)
 		{
 
 			string cmd_text = args["cmd"].f_str();
@@ -218,7 +295,7 @@ namespace kibicom.tlib
 			if (!this["is_connected"].f_bool())
 			{
 				t.f_f(args["f_fail"].f_f(), args.f_add(false, this));
-				return;
+				return this;
 			}
 
 			//t_f<t, t> f_done = args["f_done"].f_f<t_f>();
@@ -293,10 +370,10 @@ namespace kibicom.tlib
 				}));
 			}
 
-			return;
+			return this;
 		}
 
-		public string f_make_ins_query(t args)
+		public override t f_make_ins_query(t args)
 		{
 			DataTable tab = args["tab"].f_val<DataTable>();
 
@@ -342,10 +419,10 @@ namespace kibicom.tlib
 				{"query", query}
 			}));
 
-			return query;
+			return new t(){{"query",query}};
 		}
 
-		public t f_dispose(t args)
+		public override t f_dispose(t args)
 		{
 			SqlConnection conn = this["sql_conn"].f_val<SqlConnection>();
 

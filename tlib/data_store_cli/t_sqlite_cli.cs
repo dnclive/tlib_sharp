@@ -5,9 +5,9 @@ using Community.CsharpSqlite.SQLiteClient;
 using System.Data;
 using kibicom.tlib;
 
-namespace kibicom.tlib
+namespace kibicom.tlib.data_store_cli
 {
-	public class t_sqlite_cli:t
+	public class t_sqlite_cli : t_sql_store_cli
 	{
 
 		bool is_blocked = false;
@@ -37,7 +37,7 @@ namespace kibicom.tlib
 		/// <para>RETURN</para>
 		/// <para>good mood</para>
 		/// </summary>
-		public t_sqlite_cli f_connect(t args)
+		public override t_sql_store_cli f_connect(t args)
 		{
 			if (args == null)
 			{
@@ -125,14 +125,14 @@ namespace kibicom.tlib
 		/// <para>RETURN</para>
 		/// <para>good mood</para>
 		/// </summary>
-		public string f_set_db(t args)
+		public override t_sql_store_cli f_set_db(t args)
 		{
 			SqliteConnection conn = this["sql_conn"].f_val<SqliteConnection>();
 
 			//если уже установлена необходимая БД просто уходим
 			if (this["db_name"].f_str() == args["db_name"].f_str())
 			{
-				return this["db_name"].f_str();
+				return this;
 			}
 
 			Console.WriteLine("this:" + this["db_name"].f_str());
@@ -150,7 +150,7 @@ namespace kibicom.tlib
 				conn.ChangeDatabase(db_name);
 			}
 
-			return db_name;
+			return this;
 		}
 
 		/// <summary>
@@ -162,7 +162,7 @@ namespace kibicom.tlib
 		/// <para>RETURN</para>
 		/// <para></para>
 		/// </summary>
-		public t_sqlite_cli f_exec_cmd(t args)
+		public override t_sql_store_cli f_exec_cmd(t args)
 		{
 			string cmd_text = args["cmd"].f_str();
 			bool conn_keep_open = args["conn_keep_open"].f_def(false).f_bool();
@@ -236,7 +236,7 @@ namespace kibicom.tlib
 			return this;
 		}
 
-		public void f_select(t args)
+		public override t_sql_store_cli f_select(t args)
 		{
 
 			string cmd_text = args["cmd"].f_str();
@@ -301,9 +301,18 @@ namespace kibicom.tlib
 			//вызываем f_done
 			t.f_fdone(args);
 
-			return;
+			return this;
 		}
 
+		public override t f_make_ins_query(t args)
+		{
+			return this;
+		}
+
+		public override t f_dispose(t args)
+		{
+			return new t();
+		}
 
 	}
 }
