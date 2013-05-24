@@ -4,8 +4,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Data;
-using kibicom.tlib;
 using System.IO;
+
+using kibicom.tlib;
+using kibicom.tlib.data_store_cli;
 
 namespace kibicom.tlib_deb
 {

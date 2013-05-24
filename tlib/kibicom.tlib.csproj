@@ -35,10 +35,10 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Community.CsharpSqlite">
-      <HintPath>..\..\..\windraw\proj\sqlite\Community.CsharpSqlite\bin\debug_net_2_0\Community.CsharpSqlite.dll</HintPath>
+      <HintPath>..\..\..\_net_build_\Community.CsharpSqlite.dll</HintPath>
     </Reference>
     <Reference Include="Community.CsharpSqlite.SQLiteClient">
-      <HintPath>..\..\..\windraw\proj\sqlite\Community.CsharpSqlite.SQLiteClient\bin\Debug\Community.CsharpSqlite.SQLiteClient.dll</HintPath>
+      <HintPath>..\..\..\_net_build_\Community.CsharpSqlite.SQLiteClient.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
