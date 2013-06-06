@@ -138,5 +138,52 @@ namespace kibicom.tlib
 		}	
 
 		#endregion работа со строками
+
+		#region работа с датами
+
+		public static int f_udt(DateTime dt)
+		{
+			int dtcre_ut = (int)(dt.ToUniversalTime() - new DateTime(1970, 1, 1)).TotalSeconds;
+			return dtcre_ut;
+		}
+
+		public static int f_udt(string dt_str)
+		{
+			DateTime dtcre = new DateTime();
+			DateTime.TryParse(dt_str, out dtcre);
+			int dtcre_ut = (int)(dtcre.ToUniversalTime() - new DateTime(1970, 1, 1)).TotalSeconds;
+			return dtcre_ut;
+		}
+
+		public static string f_mssql_dt(DateTime dt)
+		{
+			string mssql_dt = dt.ToString("yyyy-MM-dd HH:mm:ss");
+			return mssql_dt;
+		}
+
+		public static string f_mssql_dt(string dt_str)
+		{
+			DateTime dt = new DateTime();
+			DateTime.TryParse(dt_str, out dt);
+			string mssql_dt = dt.ToString("yyyy-MM-dd HH:mm:ss");
+			return mssql_dt;
+		}
+
+		public static string f_mysql_dt(DateTime dt)
+		{
+			string mssql_dt = dt.ToString("yyyyMMddHHmmss");
+			return mssql_dt;
+		}
+
+		public static string f_mysql_dt(string dt_str)
+		{
+			DateTime dt = new DateTime();
+			DateTime.TryParse(dt_str, out dt);
+			string mssql_dt = dt.ToString("yyyyMMddHHmmss");
+			return mssql_dt;
+		}
+
+		#endregion работа с датами
+
 	}
 }

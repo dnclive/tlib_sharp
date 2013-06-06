@@ -373,6 +373,55 @@ namespace kibicom.tlib.data_store_cli
 			return this;
 		}
 
+		public override t_sql_store_cli f_store_tab(t args)
+		{
+			DataTable tab = args["tab"].f_val<DataTable>();
+
+			f_make_ins_query(new t()
+			{
+				{"tab", tab},
+				{
+					"f_done", new t_f<t,t>(delegate (t args1)
+					{
+						string query = args1["query"].f_str();
+
+						f_exec_cmd(new t()
+						{
+							//запрос блокирует клиента
+							{"block", true},
+							{"cmd", query},
+							{
+								"f_done", new t_f<t,t>(delegate (t args2)
+								{
+
+									return new t();
+								})
+							},
+							{
+								"f_fail", new t_f<t,t>(delegate (t args2)
+								{
+
+									return new t();
+								})
+							}
+						});
+
+						return new t();
+					})
+				},
+				{
+					"f_fail", new t_f<t,t>(delegate (t args1)
+					{
+
+						return new t();
+					})
+				},
+			});
+
+			return this;
+		}
+
+
 		public override t f_make_ins_query(t args)
 		{
 			DataTable tab = args["tab"].f_val<DataTable>();

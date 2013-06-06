@@ -315,6 +315,7 @@ namespace kibicom.tlib.data_store_cli
 			//string set_date_format_sql = "SET DATEFORMAT ymd \r\n";
 			//string set_language_sql = "SET LANGUAGE Russian \r\n";
 			string ins_sql_str = "";
+			string ins_sql_head = "";
 			string vals = "";
 			int oper_dr_cnt = 0;
 			foreach (DataRow dr in tab.Rows)
@@ -333,6 +334,7 @@ namespace kibicom.tlib.data_store_cli
 					vals = t_uti.fjoin(vals, ',', cl.ColumnName);
 				}
 				ins_dr_sql += " ( " + vals + " ) ";
+				ins_sql_head = ins_dr_sql;
 				//MessageBox.Show(vals);
 				//собираем значения
 				// values ( val1, val2, val3...)
@@ -343,8 +345,15 @@ namespace kibicom.tlib.data_store_cli
 				}
 
 				ins_dr_sql += " values ( " + vals + " ) ; ";
-
-				ins_sql_str += ins_dr_sql + " \r\n";
+				if (ins_sql_str == "")
+				{
+					ins_sql_str += ins_sql_head + " values ( " + vals + " ) ";
+				}
+				else
+				{
+					ins_sql_str +=  ", ( " + vals + " ) ";
+				}
+				
 				//MessageBox.Show(vals);
 				//MessageBox.Show(ins_sql_str);
 				//break;
@@ -358,7 +367,7 @@ namespace kibicom.tlib.data_store_cli
 			}
 
 			//string query = set_date_format_sql + set_language_sql + ins_sql_str;
-			string query = ins_sql_str;
+			string query = ins_sql_str+";";
 
 			t.f_f("f_done", args.f_add(true, new t()
 			{

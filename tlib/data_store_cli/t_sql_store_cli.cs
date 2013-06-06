@@ -68,6 +68,23 @@ namespace kibicom.tlib.data_store_cli
 			return this;
 		}
 
+		/// <summary>
+		/// <para>execute select query and return DataTable</para>
+		/// <para>_</para>
+		/// <para>PARAMS</para>
+		/// <para>cmd_________________Select sql command text</para>
+		/// <para>tab_name____________Name for returning table</para>
+		/// <para>f_done______________Callback function</para>
+		/// <para>_</para>
+		/// <para>RETURN</para>
+		/// <para>tab_________________requested table</para>
+		/// </summary>
+		public virtual t_sql_store_cli f_store_tab(t args)
+		{
+			return this;
+		}
+
+
 		public virtual t f_make_ins_query(t args)
 		{
 			return new t();
