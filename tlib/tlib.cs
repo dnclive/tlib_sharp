@@ -60,7 +60,7 @@ namespace kibicom.tlib
 		public Type val_type;
 
 		//значение если это делегат, те функция
-		public Delegate f = null;
+		public Delegate val_f = null;
 
 		//флаг определяющий тип текущего объекта массив, структура, значение, функция
 		//на данный момент не используется...
@@ -89,7 +89,7 @@ namespace kibicom.tlib
 
 		public t(Delegate f)
 		{
-			this.f = f;
+			this.val_f = f;
 			is_val_empty = false;
 		}
 
@@ -151,7 +151,7 @@ namespace kibicom.tlib
 				this.val_arr = val.val_arr;
 				this.val = val.val;
 				this.val_type = val.val_type;
-				this.f = val.f;
+				this.val_f = val.val_f;
 			}
 			return this;
 		}
@@ -170,7 +170,7 @@ namespace kibicom.tlib
 		{
 			Console.WriteLine("item.val " + item.val.ToString());
 			//если передаваемое занчение пустое
-			if ((item.val == null || item.val.ToString() == "") && item.f == null)
+			if ((item.val == null || item.val.ToString() == "") && item.val_f == null)
 			{
 				return this;
 			}
@@ -189,13 +189,13 @@ namespace kibicom.tlib
 		public t_f<t, t> f_f<D>()
 		{
 			//return Delegate.CreateDelegate(
-			return (t_f<t, t>)f;
+			return (t_f<t, t>)val_f;
 		}
 
 		public t_f<t, t> f_f()
 		{
 			//return Delegate.CreateDelegate(
-			return (t_f<t, t>)f;
+			return (t_f<t, t>)val_f;
 		}
 
 		private bool _f_base_on_t(Type T)
@@ -331,7 +331,7 @@ namespace kibicom.tlib
 				}
 				else if (val.GetType().ToString().Contains("kibicom.tlib.t_f"))
 				{
-					tval.f = (t_f<t, t>)val;
+					tval.val_f = (t_f<t, t>)val;
 				}
 				else
 				{
@@ -359,7 +359,7 @@ namespace kibicom.tlib
 		//требует переработки
 		public bool f_is_empty()
 		{
-			if ((val == null || val == "") && f == null)
+			if ((val == null || val == "") && val_f == null && key_val_arr.Count==0&& val_arr.Count==0)
 			{
 				return true;
 			}
@@ -382,7 +382,7 @@ namespace kibicom.tlib
 			}
 			else if (val.GetType().ToString().Contains("kibicom.tlib.t_f"))
 			{
-				key_val_arr[key].f = (t_f<t, t>)val;
+				key_val_arr[key].val_f = (t_f<t, t>)val;
 			}
 			else
 			{
@@ -397,14 +397,14 @@ namespace kibicom.tlib
 			if (val == null)
 			{
 				this.val = null;
-				this.f = null;
+				this.val_f = null;
 				this.key_val_arr.Clear();
 				this.val_arr.Clear();
 			}
 			else if (val.GetType() == typeof(t))
 			{
 				this.val = ((t)val).val;
-				this.f = ((t)val).f;
+				this.val_f = ((t)val).val_f;
 				this.key_val_arr = ((t)val).key_val_arr;
 				this.val_arr = ((t)val).val_arr;
 			}
@@ -421,7 +421,7 @@ namespace kibicom.tlib
 			 * */
 			else if (val.GetType().ToString().Contains("kibicom.tlib.t_f"))
 			{
-				this.f = (t_f<t, t>)val;
+				this.val_f = (t_f<t, t>)val;
 			}
 			else
 			{
@@ -1021,6 +1021,27 @@ namespace kibicom.tlib
 			}
 		}
 		*/
+
+		public t f_call(string f_name, t_f<t,t> f)
+		{
+			//if (args == null) return new t();
+			if (this[f_name].f_f<t_f<t, t>>() != null)
+			{
+				return this[f_name].f_f<t_f<t, t>>()(new t(f));
+			}
+			return new t();
+		}
+
+		public t f_call(string f_name, t args)
+		{
+			//if (args == null) return new t();
+			if (this[f_name].f_f<t_f<t, t>>() != null)
+			{
+				return this[f_name].f_f<t_f<t, t>>()(args);
+			}
+			return new t();
+		}
+
 		public static t f_f(string f_name, t args)
 		{
 			if (args == null) return new t();

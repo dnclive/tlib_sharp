@@ -138,7 +138,7 @@ namespace kibicom.tlib.data_store_cli
 		/// </summary>
 		public override t_sql_store_cli f_set_db(t args)
 		{
-			SqlConnection conn = this["sql_conn"].f_val<SqlConnection>();
+			OleDbConnection conn = this["sql_conn"].f_val<OleDbConnection>();
 
 			//если уже установлена необходимая БД просто уходим
 			if (this["db_name"].f_str() == args["db_name"].f_str())
@@ -245,12 +245,9 @@ namespace kibicom.tlib.data_store_cli
 			string query = args["each"]["query"].f_str();
 			string sort = args["each"]["sort"].f_str();
 
-			SqlConnection conn = this["sql_conn"].f_val<SqlConnection>();
-
+			//OleDbConnection conn = this["sql_conn"].f_val<OleDbConnection>();
+			OleDbConnection conn = f_connect(args)["sql_conn"].f_val<OleDbConnection>();
 			//t_f<t, t> f_done = args["f_done"].f_f<t_f>();
-
-
-
 
 			conn.Open();
 
@@ -260,7 +257,7 @@ namespace kibicom.tlib.data_store_cli
 			Console.WriteLine(conn.Database);
 
 			//создаем адаптек для запроса
-			SqlDataAdapter ad = new SqlDataAdapter(cmd_text, conn);
+			OleDbDataAdapter ad = new OleDbDataAdapter(cmd_text, conn);
 
 			//создаем таблицу для результата
 			DataTable tab = new DataTable(tab_name);
@@ -291,7 +288,8 @@ namespace kibicom.tlib.data_store_cli
 							"each", args["each"].f_add(true, new t()
 							{
 								{"item",	dr},
-								{"index",	i}
+								{"index",	i},
+								{"count", dr_arr.Length}
 							})
 						}
 					}));
@@ -312,19 +310,18 @@ namespace kibicom.tlib.data_store_cli
 			DataTable tab = args["tab"].f_def(new DataTable()).f_val<DataTable>();
 			string tab_name = args["tab_name"].f_def("").f_str();
 
+			DataRow[] dr_arr = args["dr_arr"].f_def(tab.Select()).f_val<DataRow[]>();
+
 			//string set_date_format_sql = "SET DATEFORMAT ymd \r\n";
 			//string set_language_sql = "SET LANGUAGE Russian \r\n";
 			string ins_sql_str = "";
 			string ins_sql_head = "";
 			string vals = "";
 			int oper_dr_cnt = 0;
-			foreach (DataRow dr in tab.Rows)
+			foreach (DataRow dr in dr_arr)
 			{
 				//insert _table_name_
 				string ins_dr_sql = " insert into " + tab_name;
-
-
-
 
 				//собираем имена колонок таблицы
 				// ( col1, col2, col3...)

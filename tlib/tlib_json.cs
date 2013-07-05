@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections;
 using System.Text;
+using System.Windows.Forms;
 
 namespace kibicom.tlib
 {
@@ -58,5 +60,52 @@ namespace kibicom.tlib
 
 			return new t() { { "json_str", "null" } };
 		}
+
+		static public t f_dict_2_t(t args)
+		{
+			try
+			{
+				object dict = args["dict"].f_val();
+				t res = new t();
+				if (dict == null)
+				{
+					return res;
+				}
+				//MessageBox.Show(dict.GetType().FullName);
+				if (dict.GetType() == typeof(Dictionary<string, object>))
+				{
+					foreach (KeyValuePair<string, object> dict_item in (Dictionary<string, object>)dict)
+					{
+						res[dict_item.Key] = f_dict_2_t(new t() { { "dict", dict_item.Value } });
+						//Dictionary<string, object> tab_payment = ((Dictionary<string, object>)order.Value)["tab_order"];
+						//перебираем платежи по текущему заказу
+						//foreach (KeyValuePair<string, object> order in )
+					}
+				}
+				else if (dict.GetType() == typeof(ArrayList))
+				{
+					foreach (object dict_item in (ArrayList)dict)
+					{
+						res.Add(f_dict_2_t(new t() { { "dict", dict_item } }));
+						//Dictionary<string, object> tab_payment = ((Dictionary<string, object>)order.Value)["tab_order"];
+						//перебираем платежи по текущему заказу
+						//foreach (KeyValuePair<string, object> order in )
+					}
+				}
+				else
+				{
+					res.f_set(dict);
+				}
+
+				return res;
+			}
+			catch (Exception ex)
+			{
+				MessageBox.Show(ex.Message);
+			}
+
+			return new t();
+		}
+
 	}
 }

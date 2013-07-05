@@ -26,6 +26,7 @@ namespace kibicom.tlib.data_store_cli
 			this["login"] = args["login"].f_def("");
 			this["pass"] = args["pass"].f_def("");
 			this["timeout"] = args["timeout"].f_def(300);
+			this["sql_conn"] = args["conn"];
 		}
 
 		/// <summary>
@@ -45,6 +46,11 @@ namespace kibicom.tlib.data_store_cli
 		{
 
 			if (args == null)
+			{
+				return this;
+			}
+
+			if (!this["sql_conn"].f_is_empty())
 			{
 				return this;
 			}
@@ -207,7 +213,7 @@ namespace kibicom.tlib.data_store_cli
 		{
 			string cmd_text = args["cmd"].f_str();
 			bool conn_keep_open = args["conn_keep_open"].f_def(false).f_bool();
-
+			bool exec_scalar = args["exec_scalar"].f_def(true).f_bool();
 			SqlConnection conn = f_connect(args)["sql_conn"].f_val<SqlConnection>();
 
 			//OleDbConnection conn = args["sql_conn"].f_val<OleDbConnection>();
@@ -226,8 +232,6 @@ namespace kibicom.tlib.data_store_cli
 			//MessageBox.Show(is_connected.ToString());
 			//MessageBox.Show(conn_keep_open.ToString());
 
-			
-
 			try
 			{
 				//if (!is_connected || conn.State != ConnectionState.Open)
@@ -236,8 +240,16 @@ namespace kibicom.tlib.data_store_cli
 					conn.Open();
 				}
 
+				object res_cnt=null;
 				cmd.Prepare();
-				int cmd_exec_cnt = cmd.ExecuteNonQuery();
+				if (exec_scalar)
+				{
+					res_cnt = cmd.ExecuteScalar();
+				}
+				else
+				{
+					res_cnt = cmd.ExecuteNonQuery();
+				}
 
 				if (!conn_keep_open)
 				{
@@ -245,8 +257,9 @@ namespace kibicom.tlib.data_store_cli
 				}
 
 				//вызываем f_done
-				t.f_fdone(args);
+				t.f_fdone(args.f_add(true, new t(){{"res_cnt", res_cnt}}));
 
+				this["res_cnt"].f_set(res_cnt);
 			}
 			catch (Exception ex)
 			{
@@ -421,6 +434,150 @@ namespace kibicom.tlib.data_store_cli
 			return this;
 		}
 
+		public t_sql_store_cli f_put_store(t args)
+		{
+			DataTable tab = args["tab"].f_val<DataTable>();
+
+			f_make_ins_query(new t()
+			{
+				{"tab", tab},
+				{
+					"f_done", new t_f<t,t>(delegate (t args1)
+					{
+						string query = args1["query"].f_str();
+
+						f_exec_cmd(new t()
+						{
+							//запрос блокирует клиента
+							{"block", true},
+							{"cmd", query},
+							{
+								"f_done", new t_f<t,t>(delegate (t args2)
+								{
+
+									return new t();
+								})
+							},
+							{
+								"f_fail", new t_f<t,t>(delegate (t args2)
+								{
+
+									return new t();
+								})
+							}
+						});
+
+						return new t();
+					})
+				},
+				{
+					"f_fail", new t_f<t,t>(delegate (t args1)
+					{
+
+						return new t();
+					})
+				},
+			});
+
+			return this;
+		}
+
+		public t_sql_store_cli f_put_store_de(t args)
+		{
+			DataTable tab = args["tab"].f_val<DataTable>();
+			DataRow row = args["row"].f_val<DataRow>();
+
+			f_make_ins_query(new t()
+			{
+				{"tab", tab},
+				{
+					"f_done", new t_f<t,t>(delegate (t args1)
+					{
+						string query = args1["query"].f_str();
+						try
+						{
+							int r_cnt = 0;
+							//выполняем запросы обновления
+							if (query != "")
+							{
+								r_cnt += f_exec_cmd(new t()
+								{
+									{"cmd" , query},
+									{"exec_scalar", true}
+								})["res_cnt"].f_int();
+								//dbconn._db.command.CommandText = set_date_format_sql + set_language_sql + upd_sql_str;
+								//r_cnt += dbconn._db.command.ExecuteNonQuery();
+							}
+
+							//если количество удачно сохраненных строк не соответствует количеству всего строк
+							/*
+							if (r_cnt != tab.Rows.)
+							{
+								throw (new Exception("Внимание!!! Не все данные были успешно сохранены!!! Обратитесь к администратору системы."));
+							}
+							*/
+						}
+						catch (Exception ex)
+						{
+							//как правило сохранить не удается если дублируется PK
+							//здесь необходимо сделать проверку на эту ошибку
+
+							//откатываем сделанные изменения
+							//dbconn._db.command.Transaction.Rollback();
+
+							//тоже глючная функция
+							try
+							{
+								//команда обновления генератора
+								//dbconn._db.command.CommandText = "exec dbo.sys_update_generator";
+								//dbconn._db.command.ExecuteNonQuery();
+							}
+							catch (Exception ex1)
+							{
+
+							}
+
+							//MessageBox.Show("При сохранении заказа произошла ошибка, \r\n часть данных сохранить не удалось. \r\n Расчитайте заказ повторно - это исправит проблему!");
+
+							//dbconn._db.CloseDB();
+
+							//пробуем еще раз сохранить данные
+							//f_2_store(tab, id_key);
+
+							//return;
+
+						}
+
+						//если запросы выполнены успешно
+
+						//dbconn._db.CloseDB();
+
+						//err = 4000;
+						//принимаем изменения в таблице
+						tab.AcceptChanges();
+
+						//err = 5000;
+						//удаляем новые строки (которых еще не было в базе)
+						foreach (DataRow dr in tab.Rows)
+						{
+							if (dr["deleted"] != DBNull.Value && dr.RowState == DataRowState.Unchanged)
+							{
+								dr.Delete();
+							}
+						}
+
+						//err = 5000;
+						//еще раз принимаем изменения
+						tab.AcceptChanges();
+
+						return new t();
+
+					})
+				}
+			});
+
+			return this;
+		}
 
 		public override t f_make_ins_query(t args)
 		{
@@ -470,6 +627,48 @@ namespace kibicom.tlib.data_store_cli
 
 			return new t(){{"query",query}};
 		}
+
+		static public t f_make_upd_query(t args)
+		{
+			DataTable tab = args["tab"].f_val<DataTable>();
+			string id_key = args["id_key"].f_str();
+
+			string set_date_format_sql = "SET DATEFORMAT ymd \r\n";
+			string set_language_sql = "SET LANGUAGE Russian \r\n";
+			string upd_sql_str = "";
+			string vals = "";
+			int oper_dr_cnt = 0;
+			foreach (DataRow dr in tab.Rows)
+			{
+				//собираем измененные значения
+				// set col1=val1, col2=val2...
+				vals = "";
+				foreach (DataColumn cl in tab.Columns)
+				{
+					vals = t_uti.fjoin(vals, ',', cl.ColumnName + "=" + t_sql_builder.f_db_val(dr, cl));
+				}
+
+				//собираем строку обновления
+				upd_sql_str += " update " + tab.TableName + " set " + vals + " where " + id_key + "=" + dr[id_key];
+
+				//MessageBox.Show(upd_sql_str);
+
+				//MessageBox.Show(" update "+tab.TableName+" set "+vals+" where "+id_key+"="+dr[id_key]);
+
+				//break;
+				oper_dr_cnt++;
+			}
+
+			string query = set_date_format_sql + set_language_sql + upd_sql_str;
+
+			t.f_f("f_done", args.f_add(true, new t()
+			{
+				{"query", query}
+			}));
+
+			return new t() { { "query", query } };
+		}
+
 
 		public override t f_dispose(t args)
 		{
