@@ -9,9 +9,9 @@ using System.Data.SqlTypes;
 using System.Data.OleDb;
 using System.Windows.Forms;
 
-namespace kibicom.tlib
+namespace kibicom.tlib.data_store_cli
 {
-	public class t_oledb_cli : t
+	public class t_oledb_cli : t_sql_store_cli
 	{
 
 		public t_oledb_cli()
@@ -32,14 +32,14 @@ namespace kibicom.tlib
 		/// <para>_</para>
 		/// <para>PARAMS</para>
 		/// <para>location_________________folder with contains dbf file</para>
-		/// <para>db_file_name_________________dbf file name</para>
+		/// <para>db_file_name_____________dbf file name</para>
 		/// <para>login__________________Login</para>
 		/// <para>pass___________________pass</para>
 		/// <para>_</para>
 		/// <para>RETURN</para>
 		/// <para>good mood</para>
 		/// </summary>
-		public t_oledb_cli f_connect(t args)
+		public override t_sql_store_cli f_connect(t args)
 		{
 
 			if (args == null)
@@ -54,11 +54,11 @@ namespace kibicom.tlib
 			string login = args["login"].f_def(this["login"].f_str()).f_def("").f_str();
 			string pass = args["pass"].f_def(this["pass"].f_str()).f_def("").f_str();
 
-			bool conn_keep_open = args["conn_keep_open"].f_def(true).f_val<bool>();
+			bool conn_keep_open = args["conn_keep_open"].f_def(true).f_bool();
 
 			//если уже подключен то выходим
 			//и входные параметры те же
-			if (this["is_connected"].f_def(false).f_val<bool>() &&
+			if (this["is_connected"].f_def(false).f_bool() &&
 				(this["location"].f_str() == location || location == "") //&&
 				//this["db_file_name"].f_str()==db_file_name&
 				//this["login"].f_str() == login || login != "" &&
@@ -136,14 +136,14 @@ namespace kibicom.tlib
 		/// <para>RETURN</para>
 		/// <para>good mood</para>
 		/// </summary>
-		public string f_set_db(t args)
+		public override t_sql_store_cli f_set_db(t args)
 		{
-			SqlConnection conn = this["sql_conn"].f_val<SqlConnection>();
+			OleDbConnection conn = this["sql_conn"].f_val<OleDbConnection>();
 
 			//если уже установлена необходимая БД просто уходим
 			if (this["db_name"].f_str() == args["db_name"].f_str())
 			{
-				return this["db_name"].f_str();
+				return this;
 			}
 
 			Console.WriteLine("this:" + this["db_name"].f_str());
@@ -161,7 +161,7 @@ namespace kibicom.tlib
 				conn.ChangeDatabase(db_name);
 			}
 
-			return db_name;
+			return this;
 		}
 
 		/// <summary>
@@ -173,15 +173,15 @@ namespace kibicom.tlib
 		/// <para>RETURN</para>
 		/// <para></para>
 		/// </summary>
-		public t_oledb_cli f_exec_cmd(t args)
+		public override t_sql_store_cli f_exec_cmd(t args)
 		{
 			string cmd_text = args["cmd"].f_str();
-			bool conn_keep_open = args["conn_keep_open"].f_def(false).f_val<bool>();
+			bool conn_keep_open = args["conn_keep_open"].f_def(false).f_bool();
 
 			OleDbConnection conn = f_connect(args)["sql_conn"].f_val<OleDbConnection>();
 			//OleDbConnection conn = args["sql_conn"].f_val<OleDbConnection>();
 
-			bool is_connected = this["is_connected"].f_def(false).f_val<bool>();
+			bool is_connected = this["is_connected"].f_def(false).f_bool();
 
 			OleDbCommand cmd = new OleDbCommand(cmd_text, conn);
 
@@ -237,7 +237,7 @@ namespace kibicom.tlib
 		/// <para>RETURN</para>
 		/// <para>tab_________________requested table</para>
 		/// </summary>
-		public void f_select(t args)
+		public override t_sql_store_cli f_select(t args)
 		{
 
 			string cmd_text = args["cmd"].f_str();
@@ -245,12 +245,9 @@ namespace kibicom.tlib
 			string query = args["each"]["query"].f_str();
 			string sort = args["each"]["sort"].f_str();
 
-			SqlConnection conn = this["sql_conn"].f_val<SqlConnection>();
-
+			//OleDbConnection conn = this["sql_conn"].f_val<OleDbConnection>();
+			OleDbConnection conn = f_connect(args)["sql_conn"].f_val<OleDbConnection>();
 			//t_f<t, t> f_done = args["f_done"].f_f<t_f>();
-
-
-
 
 			conn.Open();
 
@@ -260,7 +257,7 @@ namespace kibicom.tlib
 			Console.WriteLine(conn.Database);
 
 			//создаем адаптек для запроса
-			SqlDataAdapter ad = new SqlDataAdapter(cmd_text, conn);
+			OleDbDataAdapter ad = new OleDbDataAdapter(cmd_text, conn);
 
 			//создаем таблицу для результата
 			DataTable tab = new DataTable(tab_name);
@@ -291,7 +288,8 @@ namespace kibicom.tlib
 							"each", args["each"].f_add(true, new t()
 							{
 								{"item",	dr},
-								{"index",	i}
+								{"index",	i},
+								{"count", dr_arr.Length}
 							})
 						}
 					}));
@@ -304,26 +302,26 @@ namespace kibicom.tlib
 			//вызываем f_done
 			t.f_fdone(args);
 
-			return;
+			return this;
 		}
 
-		public string f_make_ins_query(t args)
+		public override t f_make_ins_query(t args)
 		{
 			DataTable tab = args["tab"].f_def(new DataTable()).f_val<DataTable>();
 			string tab_name = args["tab_name"].f_def("").f_str();
 
+			DataRow[] dr_arr = args["dr_arr"].f_def(tab.Select()).f_val<DataRow[]>();
+
 			//string set_date_format_sql = "SET DATEFORMAT ymd \r\n";
 			//string set_language_sql = "SET LANGUAGE Russian \r\n";
 			string ins_sql_str = "";
+			string ins_sql_head = "";
 			string vals = "";
 			int oper_dr_cnt = 0;
-			foreach (DataRow dr in tab.Rows)
+			foreach (DataRow dr in dr_arr)
 			{
 				//insert _table_name_
 				string ins_dr_sql = " insert into " + tab_name;
-
-
-
 
 				//собираем имена колонок таблицы
 				// ( col1, col2, col3...)
@@ -333,6 +331,7 @@ namespace kibicom.tlib
 					vals = t_uti.fjoin(vals, ',', cl.ColumnName);
 				}
 				ins_dr_sql += " ( " + vals + " ) ";
+				ins_sql_head = ins_dr_sql;
 				//MessageBox.Show(vals);
 				//собираем значения
 				// values ( val1, val2, val3...)
@@ -343,8 +342,15 @@ namespace kibicom.tlib
 				}
 
 				ins_dr_sql += " values ( " + vals + " ) ; ";
-
-				ins_sql_str += ins_dr_sql + " \r\n";
+				if (ins_sql_str == "")
+				{
+					ins_sql_str += ins_sql_head + " values ( " + vals + " ) ";
+				}
+				else
+				{
+					ins_sql_str +=  ", ( " + vals + " ) ";
+				}
+				
 				//MessageBox.Show(vals);
 				//MessageBox.Show(ins_sql_str);
 				//break;
@@ -358,17 +364,17 @@ namespace kibicom.tlib
 			}
 
 			//string query = set_date_format_sql + set_language_sql + ins_sql_str;
-			string query = ins_sql_str;
+			string query = ins_sql_str+";";
 
 			t.f_f("f_done", args.f_add(true, new t()
 			{
 				{"query", query}
 			}));
 
-			return query;
+			return new t(){{"query",query}};
 		}
 
-		public t f_dispose(t args)
+		public override t f_dispose(t args)
 		{
 			OleDbConnection conn = f_connect(args)["sql_conn"].f_val<OleDbConnection>();
 

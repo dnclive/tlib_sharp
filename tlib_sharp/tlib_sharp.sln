@@ -11,6 +11,13 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Community.CsharpSqlite", ".
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Community.CsharpSqlite.SQLiteClient", "..\..\josi_sharp\sqlite\Community.CsharpSqlite.SQLiteClient\Community.CsharpSqlite.SQLiteClient.csproj", "{7BC68E61-C64C-488C-975F-1E2248383B80}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "atonet", "..\..\atonet_sharp\atonet\atonet.csproj", "{DEFCCB34-352B-42AC-AB22-0A76103061AE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "atonet_sharp_deb", "..\..\atonet_sharp\atonet_sharp_deb\atonet_sharp_deb.csproj", "{0C2FFA55-5E34-4DE5-8D4E-D065EE0E73C0}"
+	ProjectSection(ProjectDependencies) = postProject
+		{34281226-04DC-4EFD-B765-4AE4ACEC101D} = {34281226-04DC-4EFD-B765-4AE4ACEC101D}
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -53,6 +60,18 @@ Global
 		{7BC68E61-C64C-488C-975F-1E2248383B80}.Release|Any CPU.Build.0 = Release|Any CPU
 		{7BC68E61-C64C-488C-975F-1E2248383B80}.Release|x86.ActiveCfg = Release|x86
 		{7BC68E61-C64C-488C-975F-1E2248383B80}.Release|x86.Build.0 = Release|x86
+		{DEFCCB34-352B-42AC-AB22-0A76103061AE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DEFCCB34-352B-42AC-AB22-0A76103061AE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DEFCCB34-352B-42AC-AB22-0A76103061AE}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{DEFCCB34-352B-42AC-AB22-0A76103061AE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DEFCCB34-352B-42AC-AB22-0A76103061AE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DEFCCB34-352B-42AC-AB22-0A76103061AE}.Release|x86.ActiveCfg = Release|Any CPU
+		{0C2FFA55-5E34-4DE5-8D4E-D065EE0E73C0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0C2FFA55-5E34-4DE5-8D4E-D065EE0E73C0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0C2FFA55-5E34-4DE5-8D4E-D065EE0E73C0}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{0C2FFA55-5E34-4DE5-8D4E-D065EE0E73C0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0C2FFA55-5E34-4DE5-8D4E-D065EE0E73C0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0C2FFA55-5E34-4DE5-8D4E-D065EE0E73C0}.Release|x86.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

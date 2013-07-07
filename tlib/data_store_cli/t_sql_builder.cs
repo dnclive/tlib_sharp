@@ -4,9 +4,9 @@ using System.Collections.Generic;
 using System.Text;
 using System.Data;
 
-namespace kibicom.tlib
+namespace kibicom.tlib.data_store_cli
 {
-	class t_sql_builder
+	public class t_sql_builder
 	{
 		static public string f_make_ins_query(t args)
 		{
@@ -56,6 +56,48 @@ namespace kibicom.tlib
 
 			return query;
 		}
+
+		static public string f_make_upd_query(t args)
+		{
+			DataTable tab = args["tab"].f_val<DataTable>();
+			string id_key = args["id_key"].f_str();
+
+			string set_date_format_sql = "SET DATEFORMAT ymd \r\n";
+			string set_language_sql = "SET LANGUAGE Russian \r\n";
+			string upd_sql_str = "";
+			string vals = "";
+			int oper_dr_cnt = 0;
+			foreach (DataRow dr in tab.Rows)
+			{
+				//собираем измененные значения
+				// set col1=val1, col2=val2...
+				vals = "";
+				foreach (DataColumn cl in tab.Columns)
+				{
+					vals = t_uti.fjoin(vals, ',', cl.ColumnName + "=" + f_db_val(dr, cl));
+				}
+
+				//собираем строку обновления
+				upd_sql_str += " update " + tab.TableName + " set " + vals + " where " + id_key + "=" + dr[id_key];
+
+				//MessageBox.Show(upd_sql_str);
+
+				//MessageBox.Show(" update "+tab.TableName+" set "+vals+" where "+id_key+"="+dr[id_key]);
+
+				//break;
+				oper_dr_cnt++;
+			}
+
+			string query = set_date_format_sql + set_language_sql + upd_sql_str;
+
+			t.f_f("f_done", args.f_add(true, new t()
+			{
+				{"query", query}
+			}));
+
+			return query;
+		}
+
 
 		/*
 		public void f_2_store(DataTable tab, string id_key)
@@ -210,6 +252,11 @@ namespace kibicom.tlib
 		}
 		*/
 
+		static public string f_db_val(DataRow dr, string column_name)
+		{
+			return f_db_val(dr, dr.Table.Columns[column_name]);
+		}
+
 		static public string f_db_val(DataRow dr, DataColumn cl)
 		{
 			//if (cl.ColumnName=="deleted")
@@ -255,7 +302,46 @@ namespace kibicom.tlib
 			return "";
 		}
 
-		
+		static public string f_db_val(object val)
+		{
+			if (val == DBNull.Value)
+			{
+				return "null";
+			}
+			if (val.GetType() == typeof(DateTime))
+			{
+				return "'" + DateTime.Parse(val.ToString()).ToString("yyyy-MM-dd HH:mm:ss") + "'";
+				//return "'"+DateTime.Parse(dr[cl.ColumnName].ToString()).ToUniversalTime()+"'";	
+			}
+			if (val.GetType() == typeof(String))
+			{
+				return "'" + val.ToString() + "'";
+			}
+			if (val.GetType() == typeof(int) ||
+					val.GetType() == typeof(Int16) ||
+					val.GetType() == typeof(Int32) ||
+					val.GetType() == typeof(Int64) ||
+					val.GetType() == typeof(double) ||
+					val.GetType() == typeof(float) ||
+					val.GetType() == typeof(decimal)
+				)
+			{
+				return val.ToString().Replace(',', '.');
+			}
+			if (val.GetType() == typeof(System.Guid))
+			{
+				return "'" + val.ToString() + "'";
+			}
+			if (val.GetType() == typeof(System.Byte[]))
+			{
+				return "'" + "0x" + BitConverter.ToString((byte[])val).Replace("-", "") + "'";
+			}
+			else
+			{
+				throw new Exception("f_db_val " + val.GetType() + " not processing");
+			}
+			return "";
+		}
 
 	}
 }

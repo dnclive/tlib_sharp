@@ -46,7 +46,7 @@ namespace kibicom.tlib
 	//класс представляет собой универсальный динамический, структурируемый тип данных
 	//где каждый элемент может быть строкой, числом, массивом, структурой, функцией и тд.
 	[Serializable]
-	public class t : IDictionary<string, t>, IList<t>
+	public partial class t : IDictionary<string, t>, IList<t>
 	{
 		//массив именованных элементов (аля {key:value, key1:val1})
 		private Dictionary<string, t> key_val_arr = new Dictionary<string, t>();
@@ -60,14 +60,16 @@ namespace kibicom.tlib
 		public Type val_type;
 
 		//значение если это делегат, те функция
-		public Delegate f = null;
+		public Delegate val_f = null;
 
 		//флаг определяющий тип текущего объекта массив, структура, значение, функция
 		//на данный момент не используется...
-		bool is_struct;
-		bool is_array;
-		bool is_val;
-		bool is_f;
+		bool is_struct=false;
+		bool is_array = false;
+		bool is_val = false;
+		bool is_f = false;
+		bool is_base_on_t = false;
+		bool is_t = false;				//значение есть t или базируется на нем
 
 		//true если данных t не несет значения
 		bool is_val_empty = true;
@@ -87,7 +89,7 @@ namespace kibicom.tlib
 
 		public t(Delegate f)
 		{
-			this.f = f;
+			this.val = f;
 			is_val_empty = false;
 		}
 
@@ -149,7 +151,7 @@ namespace kibicom.tlib
 				this.val_arr = val.val_arr;
 				this.val = val.val;
 				this.val_type = val.val_type;
-				this.f = val.f;
+				this.val = val.val;
 			}
 			return this;
 		}
@@ -168,7 +170,7 @@ namespace kibicom.tlib
 		{
 			Console.WriteLine("item.val " + item.val.ToString());
 			//если передаваемое занчение пустое
-			if ((item.val == null || item.val.ToString() == "") && item.f == null)
+			if ((item.val == null || item.val.ToString() == "") && item.val == null)
 			{
 				return this;
 			}
@@ -187,49 +189,50 @@ namespace kibicom.tlib
 		public t_f<t, t> f_f<D>()
 		{
 			//return Delegate.CreateDelegate(
-			return (t_f<t, t>)f;
+			return (t_f<t, t>)val;
 		}
 
 		public t_f<t, t> f_f()
 		{
 			//return Delegate.CreateDelegate(
-			return (t_f<t, t>)f;
+			return (t_f<t, t>)val;
+		}
+
+		private bool _f_base_on_t(Type T)
+		{
+			if (T.BaseType == typeof(t))
+			{
+				return true;
+			}
+			else if (T.BaseType == typeof(object))
+			{
+				return false;
+			}
+			else
+			{
+				return _f_base_on_t(T.BaseType);
+			}
 		}
 
 		/*возвращает объект*/
 		public T f_val<T>()
 		{
-			//if (val == null) return val;
-			//MessageBox.Show(typeof(T).ToString());
-			if (typeof(T).ToString() == "System.Boolean")
+			if (typeof(T) == this.GetType())
+			//if (is_t)
 			{
-				if (val == null || val.ToString() == "False")
-				{
-					return (T)Convert.ChangeType(false, typeof(T));
-				}
-				else
-				{
-					return (T)Convert.ChangeType(true, typeof(T));
-				}
-
+				return (T)(object)this;
 			}
-
-			try
+			else if (val == null)
 			{
-				if (val == null)
-				{
-					return default(T);
-				}
+				return default(T);
+			}
+			else if (typeof(T) == val.GetType())
+			{
+				return (T)(object)val ;
+			}
+			else
+			{
 				return (T)val;
-			}
-			catch (Exception ex)
-			{
-
-				ex.Data.Add("t", this.ToString());
-				ex.Data.Add("val", val);
-				ex.Data.Add("args", ex);
-				//MessageBox.Show(val.ToString() + "\r\n"+ex.Message);
-				throw (ex);
 			}
 
 		}
@@ -270,6 +273,7 @@ namespace kibicom.tlib
 			//t_val<tp3> new_val=new t_val<tp3>(val);
 			return val;
 		}
+
 
 		public T f_val<T>(T val)
 		{
@@ -315,11 +319,47 @@ namespace kibicom.tlib
 			return this;
 		}
 
+		public t f_def_set(string key, object val)
+		{
+			t tval = null;
+			if (!key_val_arr.TryGetValue(key, out tval))
+			{
+				tval = new t();
+				if (_f_base_on_t(val.GetType()) || val.GetType() == typeof(t))
+				{
+					tval = (t)val;
+				}
+				else if (val.GetType().ToString().Contains("kibicom.tlib.t_f"))
+				{
+					tval.val = (t_f<t, t>)val;
+				}
+				else
+				{
+					tval.val = val;
+				}
+				key_val_arr.Add(key, tval);
+			}
+			return this;
+		}
+
+		public t f_def(string key, object val)
+		{
+			t tval = null;
+			if (!key_val_arr.TryGetValue(key, out tval))
+			{
+				tval = new t(val);
+				key_val_arr.Add(key, tval);
+			}
+
+			return tval;
+
+		}
+
 		//значение пустое
 		//требует переработки
 		public bool f_is_empty()
 		{
-			if ((val == null || val == "") && f == null)
+			if ((val == null || val == "") && val == null && key_val_arr.Count==0&& val_arr.Count==0)
 			{
 				return true;
 			}
@@ -330,20 +370,23 @@ namespace kibicom.tlib
 		//задать значение элемента
 		public t f_set(string key, object val)
 		{
-			if (val.GetType().ToString() == "kibicom.tlib.t")
+			//if (val.GetType().ToString() == "kibicom.tlib.t")
+			if (_f_base_on_t(val.GetType()) || val.GetType() == typeof(t))
 			{
-				this[key].val = ((t)val).val;
-				this[key].f = ((t)val).f;
-				this[key].key_val_arr = ((t)val).key_val_arr;
-				this[key].val_arr = ((t)val).val_arr;
+				//this[key] = (t)val;
+				key_val_arr[key] = (t)val;
+				//this[key].val = ((t)val).val;
+				//this[key].f = ((t)val).f;
+				//this[key].key_val_arr = ((t)val).key_val_arr;
+				//this[key].val_arr = ((t)val).val_arr;
 			}
 			else if (val.GetType().ToString().Contains("kibicom.tlib.t_f"))
 			{
-				this[key].f = (t_f<t, t>)val;
+				key_val_arr[key].val = (t_f<t, t>)val;
 			}
 			else
 			{
-				this[key].val = val;
+				key_val_arr[key].val = val;
 			}
 			return this;
 		}
@@ -351,16 +394,34 @@ namespace kibicom.tlib
 		//задать свое значение val
 		public t f_set(object val)
 		{
-			if (val.GetType().ToString() == "kibicom.tlib.t")
+			if (val == null)
+			{
+				this.val = null;
+				this.val = null;
+				this.key_val_arr.Clear();
+				this.val_arr.Clear();
+			}
+			else if (val.GetType() == typeof(t))
+			{
+				this.val = ((t)val).val;
+				this.val = ((t)val).val;
+				this.key_val_arr = ((t)val).key_val_arr;
+				this.val_arr = ((t)val).val_arr;
+			}
+			/*
+			else if (_f_base_on_t(val.GetType()))
+			//else if (val.GetType().ToString
 			{
 				this.val = ((t)val).val;
 				this.f = ((t)val).f;
 				this.key_val_arr = ((t)val).key_val_arr;
 				this.val_arr = ((t)val).val_arr;
+				Convert.ChangeType(this, val.GetType());
 			}
+			 * */
 			else if (val.GetType().ToString().Contains("kibicom.tlib.t_f"))
 			{
-				this.f = (t_f<t,t>)val;
+				this.val = (t_f<t, t>)val;
 			}
 			else
 			{
@@ -369,7 +430,15 @@ namespace kibicom.tlib
 			return this;
 		}
 
+		public t f_get(string key)
+		{
+			return key_val_arr[key];
+		}
 
+		public t f_get(int key)
+		{
+			return val_arr[key];
+		}
 
 		/*возвращает строку*/
 		public string f_str()
@@ -378,7 +447,7 @@ namespace kibicom.tlib
 			{
 				return "";
 			}
-			if (val.GetType().Name == "System.String")
+			if (val.GetType() == typeof(string))
 			{
 				return (string)val;
 			}
@@ -414,7 +483,15 @@ namespace kibicom.tlib
 		/*возвращает bool*/
 		public bool f_bool()
 		{
-			return (bool)val;
+			if (val == null || val.ToString() == "False" || val.ToString() == "")
+			{
+				return false;
+			}
+			else
+			{
+				return true;
+			}
+			//return (bool)val;
 		}
 
 
@@ -482,13 +559,6 @@ namespace kibicom.tlib
 				return true;
 			}
 
-			// If one is null, but not both, return false.
-			if (((object)a == null) || ((object)b == null))
-			{
-				return false;
-			}
-
-			//если не равны ссылки объекты считаются не равными
 			return false;
 		}
 
@@ -503,7 +573,7 @@ namespace kibicom.tlib
 
 		public t f_inc()
 		{
-			if (val.GetType().Name == "System.Int")
+			if (val.GetType()==typeof(int))
 			{
 				var int_val = (int)this.val;
 				int_val++;
@@ -514,7 +584,7 @@ namespace kibicom.tlib
 
 		public t f_inc(int n)
 		{
-			if (val.GetType().Name == "System.Int")
+			if (val.GetType() == typeof(int))
 			{
 				var int_val = (int)this.val;
 				int_val+=n;
@@ -525,7 +595,7 @@ namespace kibicom.tlib
 
 		public t f_dec()
 		{
-			if (val.GetType().Name == "System.Int")
+			if (val.GetType() == typeof(int))
 			{
 				var int_val = (int)this.val;
 				int_val--;
@@ -536,7 +606,7 @@ namespace kibicom.tlib
 		
 		public t f_dec(int n)
 		{
-			if (val.GetType().Name == "System.Int")
+			if (val.GetType() == typeof(int))
 			{
 				var int_val = (int)this.val;
 				int_val-=n;
@@ -618,10 +688,53 @@ namespace kibicom.tlib
 			{
 				//MessageBox.Show(key_val_arr.ContainsKey(key).ToString());
 
+				/*
+				try
+				{
+					return key_val_arr[key];
+				}
+				catch (Exception ex)
+				{
+					t new_t = new t();
+					key_val_arr.Add(key, new_t);
+					return new_t;
+				}
+				*/
+
+
+				t tval = null;
+
+				//key_val_arr.TryGetValue(key, out tval);
+				//this.GetType().GetField()
+				/*
+				foreach (KeyValuePair<string, t> item in key_val_arr)
+				{
+					if (item.Key == key)
+					{
+						return item.Value;
+					}
+				}
+				*/
+				if (!key_val_arr.TryGetValue(key, out tval))
+				{
+					tval = new t();
+					key_val_arr.Add(key, tval);
+				}
+
+				/*
+				if (tval == null)
+				{
+					tval = new t();
+					key_val_arr.Add(key, tval);
+					//return new_t;
+				}
+				*/
+
+				return tval;
 
 				if (key_val_arr.ContainsKey(key))
 				{
-					return (t)key_val_arr[key];
+					return key_val_arr[key];
 				}
 				else
 				{
@@ -629,6 +742,8 @@ namespace kibicom.tlib
 					key_val_arr.Add(key, new_t);
 					return new_t;
 				}
+				
+
 			}
 			set
 			{
@@ -641,13 +756,15 @@ namespace kibicom.tlib
 
 				//если тим значения не tlib.t
 				//преобразуем к нему
-				if (value.GetType().ToString() != "kibicom.tlib.t")
+				//if (value.GetType().ToString() != "kibicom.tlib.t")
+				if (_f_base_on_t(value.GetType()) || value.GetType() == typeof(t))
 				{
-					tval = new t(value);
+					tval = value;
+					is_t = true;
 				}
 				else
 				{
-					tval = value;
+					tval = new t(value);
 				}
 				if (key_val_arr.ContainsKey(key))
 				{
@@ -697,14 +814,17 @@ namespace kibicom.tlib
 			//проверяем тип поскольку
 			//типы наследованные от t при инициализации объекта
 			//будут добавляться через этот метод
-			if (val.GetType().ToString() == "kibicom.tlib.t")
+			if (val.GetType() == typeof(t))
 			{
-				key_val_arr.Add(key, val);
+				val.is_base_on_t = true;
+				val.is_t = true;
+				//key_val_arr.Add(key, val);
 			}
 			else
 			{
-				key_val_arr.Add(key, new t(val));
+				//key_val_arr.Add(key, new t(val));
 			}
+			key_val_arr.Add(key, val);
 		}
 
 		public void Add(string key, object val)
@@ -718,6 +838,7 @@ namespace kibicom.tlib
 		{
 			//KeyValuePair<string, t_res> new_item=new KeyValuePair<string, t_res>(key, null);
 			//new_item.val = val;
+			is_f = true;
 			key_val_arr.Add(key, new t(f));
 		}
 
@@ -744,6 +865,7 @@ namespace kibicom.tlib
 		public void Clear()
 		{
 			key_val_arr.Clear();
+			val_arr.Clear();
 		}
 
 		public bool ContainsKey(string key)
@@ -856,6 +978,10 @@ namespace kibicom.tlib
 
 		public IEnumerator<t> GetEnumerator_il()
 		{
+			if (val_arr == null)
+			{
+				val_arr = new List<t>();
+			}
 			return val_arr.GetEnumerator();
 		}
 
@@ -885,6 +1011,7 @@ namespace kibicom.tlib
 
 		#region функции обратного вызова
 
+		/*
 		public static void f_f(string f_name, t args)
 		{
 			if (args == null) return;
@@ -893,13 +1020,45 @@ namespace kibicom.tlib
 				args[f_name].f_f<t_f<t, t>>()(args);
 			}
 		}
+		*/
 
-		public static void f_f(t_f<t, t> f, t args)
+		public t f_call(string f_name, t_f<t,t> f)
+		{
+			//if (args == null) return new t();
+			if (this[f_name].f_f<t_f<t, t>>() != null)
+			{
+				return this[f_name].f_f<t_f<t, t>>()(new t(f));
+			}
+			return new t();
+		}
+
+		public t f_call(string f_name, t args)
+		{
+			//if (args == null) return new t();
+			if (this[f_name].f_f<t_f<t, t>>() != null)
+			{
+				return this[f_name].f_f<t_f<t, t>>()(args);
+			}
+			return new t();
+		}
+
+		public static t f_f(string f_name, t args)
+		{
+			if (args == null) return new t();
+			if (args[f_name].f_f<t_f<t, t>>() != null)
+			{
+				return args[f_name].f_f<t_f<t, t>>()(args);
+			}
+			return new t();
+		}
+
+		public static t f_f(t_f<t, t> f, t args)
 		{
 			if (f != null)
 			{
-				f(args);
+				return f(args);
 			}
+			return new t();
 		}
 
 		#region выполнено
@@ -1017,7 +1176,7 @@ namespace kibicom.tlib
 		static public t f_chain(t args)
 		{
 			string seq_name = args["seq_name"].f_def("main").f_str();
-			bool async = args["async"].f_def(false).f_val<bool>();
+			bool async = args["async"].f_def(false).f_bool();
 
 			//перебираем переданные функции
 			foreach (t f in (IList<t>)args["seq"])
