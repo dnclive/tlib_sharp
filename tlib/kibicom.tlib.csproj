@@ -59,6 +59,7 @@
     <Compile Include="tlib.cs" />
     <Compile Include="tlib_iconvertible.cs" />
     <Compile Include="tlib_json.cs" />
+    <Compile Include="tlib_when.cs" />
     <Compile Include="t_deb.cs" />
     <Compile Include="t_dot.cs" />
     <Compile Include="data_store_cli\t_msslq_cli.cs" />

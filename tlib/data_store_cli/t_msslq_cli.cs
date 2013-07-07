@@ -214,6 +214,9 @@ namespace kibicom.tlib.data_store_cli
 			string cmd_text = args["cmd"].f_str();
 			bool conn_keep_open = args["conn_keep_open"].f_def(false).f_bool();
 			bool exec_scalar = args["exec_scalar"].f_def(true).f_bool();
+			bool transact = args["transact"].f_def(true).f_bool();
+			bool rollback_fail=args["rollbakc_fail"].f_def(true).f_bool();
+
 			SqlConnection conn = f_connect(args)["sql_conn"].f_val<SqlConnection>();
 
 			//OleDbConnection conn = args["sql_conn"].f_val<OleDbConnection>();
@@ -229,6 +232,8 @@ namespace kibicom.tlib.data_store_cli
 
 			SqlCommand cmd = new SqlCommand(cmd_text, conn);
 
+			SqlTransaction tran = null;
+
 			//MessageBox.Show(is_connected.ToString());
 			//MessageBox.Show(conn_keep_open.ToString());
 
@@ -242,6 +247,14 @@ namespace kibicom.tlib.data_store_cli
 
 				object res_cnt=null;
 				cmd.Prepare();
+
+				//если нужно откатывать при неудаче открываем транзакцию
+				if (transact)
+				{
+					tran=conn.BeginTransaction();
+					cmd.Transaction = tran;
+				}
+				
 				if (exec_scalar)
 				{
 					res_cnt = cmd.ExecuteScalar();
@@ -251,13 +264,34 @@ namespace kibicom.tlib.data_store_cli
 					res_cnt = cmd.ExecuteNonQuery();
 				}
 
+				//если нужно откатывать при неудаче и мы здесь
+				//и f_done то подтверждаем транзакцию
+				if (transact&&args["f_done"].f_is_empty())
+				{
+					tran.Commit();
+				}
+
+
+				if (!args["f_done"].f_is_empty())
+				{
+					//вызываем f_done
+					t f_done_res = t.f_f("f_done", args.f_add(true, new t() { { "res_cnt", res_cnt } }));
+
+					//если fdone вернул подтверждение транзакции или не вернул ничего то подтверждаем
+					if (f_done_res["commit"].f_def(true).f_bool() && transact)
+					{
+						tran.Commit();
+					}
+					else
+					{
+						tran.Rollback();
+					}
+				}
+
 				if (!conn_keep_open)
 				{
 					conn.Close();
 				}
-
-				//вызываем f_done
-				t.f_fdone(args.f_add(true, new t(){{"res_cnt", res_cnt}}));
 
 				this["res_cnt"].f_set(res_cnt);
 			}
@@ -267,11 +301,22 @@ namespace kibicom.tlib.data_store_cli
 
 				ex.Data.Add("args", args);
 
-				t.f_f(args["f_fail"].f_f(), args.f_add(true, new t() 
+				t f_fail_res=t.f_f(args["f_fail"].f_f(), args.f_add(true, new t() 
 				{ 
 					{ "message", "connection failed" },
 					{ "ex", ex}
 				}));
+
+				//если f_fail вернул подтверждение транзакции или не вернул ничего то подтверждаем
+				if (f_fail_res["commit"].f_def(rollback_fail).f_bool()&&transact)
+				{
+					tran.Commit();
+				}
+				else
+				{
+					tran.Rollback();
+				}
+
 			}
 
 			//chb_db.Items.Add();
@@ -403,15 +448,17 @@ namespace kibicom.tlib.data_store_cli
 							//запрос блокирует клиента
 							{"block", true},
 							{"cmd", query},
+							{"f_done", args["f_done"].f_f()},
+							{"f_fail", args["f_fail"].f_f()},
 							{
-								"f_done", new t_f<t,t>(delegate (t args2)
+								"f_done_", new t_f<t,t>(delegate (t args2)
 								{
 
 									return new t();
 								})
 							},
 							{
-								"f_fail", new t_f<t,t>(delegate (t args2)
+								"f_fail_", new t_f<t,t>(delegate (t args2)
 								{
 
 									return new t();
@@ -434,6 +481,17 @@ namespace kibicom.tlib.data_store_cli
 			return this;
 		}
 
+		/// <summary>
+		/// <para>put (insert or update) table or row in store not use deleted engine</para>
+		/// <para>_</para>
+		/// <para>PARAMS</para>
+		/// <para>cmd_________________Select sql command text</para>
+		/// <para>tab_name____________Name for returning table</para>
+		/// <para>f_done______________Callback function</para>
+		/// <para>_</para>
+		/// <para>RETURN</para>
+		/// <para>tab_________________requested table</para>
+		/// </summary>
 		public t_sql_store_cli f_put_store(t args)
 		{
 			DataTable tab = args["tab"].f_val<DataTable>();
@@ -482,93 +540,100 @@ namespace kibicom.tlib.data_store_cli
 			return this;
 		}
 
+		/// <summary>
+		/// <para>put (insert or update) table or row to store using deleted engine (de)</para>
+		/// <para>_</para>
+		/// <para>PARAMS</para>
+		/// <para>cmd_________________Select sql command text</para>
+		/// <para>tab_name____________Name for returning table</para>
+		/// <para>f_done______________Callback function</para>
+		/// <para>_</para>
+		/// <para>RETURN</para>
+		/// <para>tab_________________requested table</para>
+		/// </summary>
 		public t_sql_store_cli f_put_store_de(t args)
 		{
 			DataTable tab = args["tab"].f_val<DataTable>();
 			DataRow row = args["row"].f_val<DataRow>();
+			string tab_name = args["tab_name"].f_str();
+			string key_name = args["key_name"].f_str();
 
 			f_make_ins_query(new t()
 			{
 				{"tab", tab},
+				{"tab_name", tab_name},
+				{"key_name", key_name},
 				{
 					"f_done", new t_f<t,t>(delegate (t args1)
 					{
 						string query = args1["query"].f_str();
-						try
+						int processed_dr_cnt = args1["processed_dr_cnt"].f_int();
+
+						//выполняем команды вставки
+						f_store_put_exec_de(new t()
 						{
-							int r_cnt = 0;
-							//выполняем запросы обновления
-							if (query != "")
+							{"query", query},
+							{"exprected_res_cnt", processed_dr_cnt},
 							{
-								r_cnt += f_exec_cmd(new t()
+								"fdone", new t_f<t,t>(delegate (t args2)
 								{
-									{"cmd" , query},
-									{"exec_scalar", true}
-								})["res_cnt"].f_int();
-								//dbconn._db.command.CommandText = set_date_format_sql + set_language_sql + upd_sql_str;
-								//r_cnt += dbconn._db.command.ExecuteNonQuery();
-							}
 
-							//если количество удачно сохраненных строк не соответствует количеству всего строк
-							/*
-							if (r_cnt != tab.Rows.)
-							{
-								throw (new Exception("Внимание!!! Не все данные были успешно сохранены!!! Обратитесь к администратору системы."));
+									//принимаем изменения в таблице
+									tab.AcceptChanges();
+
+									//err = 5000;
+									//удаляем новые строки (которых еще не было в базе)
+									foreach (DataRow dr in tab.Rows)
+									{
+										if (dr["deleted"] != DBNull.Value && dr.RowState == DataRowState.Unchanged)
+										{
+											dr.Delete();
+										}
+									}
+
+									//err = 5000;
+									//еще раз принимаем изменения
+									tab.AcceptChanges();
+
+									return new t();
+								})
 							}
-							*/
-						}
-						catch (Exception ex)
+						});
+
+						return new t();
+
+					})
+				}
+			});
+
+			f_make_upd_query(new t()
+			{
+				{"tab", tab},
+				{"tab_name", tab_name},
+				{"key_name", key_name},
+				{
+					"f_done", new t_f<t,t>(delegate (t args1)
+					{
+						string query = args1["query"].f_str();
+						int processed_dr_cnt = args1["processed_dr_cnt"].f_int();
+
+						//выполняем команды вставки
+						f_store_put_exec_de(new t()
 						{
-							//как правило сохранить не удается если дублируется PK
-							//здесь необходимо сделать проверку на эту ошибку
-
-							//откатываем сделанные изменения
-							//dbconn._db.command.Transaction.Rollback();
-
-							//тоже глючная функция
-							try
+							{"query", query},
+							{"exprected_res_cnt", processed_dr_cnt},
 							{
-								//команда обновления генератора
-								//dbconn._db.command.CommandText = "exec dbo.sys_update_generator";
-								//dbconn._db.command.ExecuteNonQuery();
+								"fdone", new t_f<t,t>(delegate (t args2)
+								{
+
+									//принимаем изменения в таблице
+									tab.AcceptChanges();
+
+
+									return new t();
+								})
 							}
-							catch (Exception ex1)
-							{
-
-							}
-
-							//MessageBox.Show("При сохранении заказа произошла ошибка, \r\n часть данных сохранить не удалось. \r\n Расчитайте заказ повторно - это исправит проблему!");
-
-							//dbconn._db.CloseDB();
-
-							//пробуем еще раз сохранить данные
-							//f_2_store(tab, id_key);
-
-							//return;
-
-						}
-
-						//если запросы выполнены успешно
-
-						//dbconn._db.CloseDB();
-
-						//err = 4000;
-						//принимаем изменения в таблице
-						tab.AcceptChanges();
-
-						//err = 5000;
-						//удаляем новые строки (которых еще не было в базе)
-						foreach (DataRow dr in tab.Rows)
-						{
-							if (dr["deleted"] != DBNull.Value && dr.RowState == DataRowState.Unchanged)
-							{
-								dr.Delete();
-							}
-						}
-
-						//err = 5000;
-						//еще раз принимаем изменения
-						tab.AcceptChanges();
+						});
 
 						return new t();
 
@@ -582,14 +647,27 @@ namespace kibicom.tlib.data_store_cli
 		public override t f_make_ins_query(t args)
 		{
 			DataTable tab = args["tab"].f_val<DataTable>();
+			string tab_name = args["tab_name"].f_str();
+			string row_state = args["row_state"].f_str();
+
+			t res = new t();
 
 			string set_date_format_sql = "SET DATEFORMAT ymd \r\n";
 			string set_language_sql = "SET LANGUAGE Russian \r\n";
 			string ins_sql_str = "";
 			string vals = "";
 			int oper_dr_cnt = 0;
+			int processed_dr_cnt = 0;
 			foreach (DataRow dr in tab.Rows)
 			{
+				if (!row_state.ToLower().Contains(dr.RowState.ToString().ToLower())&&row_state!="")
+				{
+					continue;
+				}
+
+				//текущая строка попадает в запрос
+				processed_dr_cnt++;
+
 				//insert _table_name_
 				ins_sql_str += " insert " + tab.TableName;
 
@@ -625,7 +703,11 @@ namespace kibicom.tlib.data_store_cli
 				{"query", query}
 			}));
 
-			return new t(){{"query",query}};
+			return new t()
+			{
+				{"query",query},
+				{"processed_dr_cnt", processed_dr_cnt},
+			};
 		}
 
 		static public t f_make_upd_query(t args)
@@ -669,6 +751,90 @@ namespace kibicom.tlib.data_store_cli
 			return new t() { { "query", query } };
 		}
 
+		public t f_store_put_exec_de(t args)
+		{
+			string query = args["query"].f_str();
+			int exprected_res_cnt = args["exprected_res_cnt"].f_int();
+
+			try
+			{
+				int r_cnt = 0;
+				//выполняем запрос
+				if (query != "")
+				{
+					r_cnt += f_exec_cmd(new t()
+					{
+						{"cmd" , query},
+						{"rollback_fail", true},
+						{"exec_scalar", true},
+						{
+							"fdone", new t_f<t,t>(delegate (t args2)
+							{
+								int res_cnt = args2["res_cnt"].f_int();
+
+								if (res_cnt==exprected_res_cnt)
+								{
+									t.f_f(args["f_done"].f_f(), args2);
+
+
+									return new t(){{"commit", true}};
+								}
+
+								return new t() { { "commit", false } };
+								
+							})
+						}
+					})["res_cnt"].f_int();
+				}
+
+				//если количество удачно сохраненных строк не соответствует количеству всего строк
+				
+				if (r_cnt != exprected_res_cnt)
+				{
+					throw (new Exception("Внимание!!! Не все данные были успешно сохранены!!! Обратитесь к администратору системы."));
+				}
+				
+			}
+			catch (Exception ex)
+			{
+				//как правило сохранить не удается если дублируется PK
+				//здесь необходимо сделать проверку на эту ошибку
+
+				//откатываем сделанные изменения
+				//dbconn._db.command.Transaction.Rollback();
+
+				//тоже глючная функция
+				try
+				{
+					//команда обновления генератора
+					//dbconn._db.command.CommandText = "exec dbo.sys_update_generator";
+					//dbconn._db.command.ExecuteNonQuery();
+				}
+				catch (Exception ex1)
+				{
+
+				}
+
+				//MessageBox.Show("При сохранении заказа произошла ошибка, \r\n часть данных сохранить не удалось. \r\n Расчитайте заказ повторно - это исправит проблему!");
+
+				//dbconn._db.CloseDB();
+
+				//пробуем еще раз сохранить данные
+				//f_2_store(tab, id_key);
+
+				//return;
+
+			}
+
+			//если запросы выполнены успешно
+
+			//dbconn._db.CloseDB();
+
+			//err = 4000;
+			
+
+			return new t();
+		}
 
 		public override t f_dispose(t args)
 		{

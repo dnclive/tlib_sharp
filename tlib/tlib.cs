@@ -1052,12 +1052,13 @@ namespace kibicom.tlib
 			return new t();
 		}
 
-		public static void f_f(t_f<t, t> f, t args)
+		public static t f_f(t_f<t, t> f, t args)
 		{
 			if (f != null)
 			{
-				f(args);
+				return f(args);
 			}
+			return new t();
 		}
 
 		#region выполнено
