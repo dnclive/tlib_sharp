@@ -165,7 +165,7 @@ namespace kibicom.tlib.data_store_cli
 
 			}
 
-			dbconn._db.OpenDB();
+			db.OpenDB();
 
 			try
 			{
@@ -176,16 +176,16 @@ namespace kibicom.tlib.data_store_cli
 				//выполняем запросы обновления
 				if (upd_sql_str != "")
 				{
-					dbconn._db.command.CommandText = set_date_format_sql + set_language_sql + upd_sql_str;
-					r_cnt += dbconn._db.command.ExecuteNonQuery();
+					db.command.CommandText = set_date_format_sql + set_language_sql + upd_sql_str;
+					r_cnt += db.command.ExecuteNonQuery();
 				}
 
 				err = 2000;
 				//выполняем запросы вставки
 				if (ins_sql_str != "")
 				{
-					dbconn._db.command.CommandText = set_date_format_sql + set_language_sql + ins_sql_str;
-					r_cnt += dbconn._db.command.ExecuteNonQuery();
+					db.command.CommandText = set_date_format_sql + set_language_sql + ins_sql_str;
+					r_cnt += db.command.ExecuteNonQuery();
 				}
 
 				if (r_cnt != oper_dr_cnt)
@@ -202,14 +202,14 @@ namespace kibicom.tlib.data_store_cli
 				//здесь необходимо сделать проверку на эту ошибку
 
 				//откатываем сделанные изменения
-				dbconn._db.command.Transaction.Rollback();
+				db.command.Transaction.Rollback();
 
 				//тоже глючная функция
 				try
 				{
 					//команда обновления генератора
-					dbconn._db.command.CommandText = "exec dbo.sys_update_generator";
-					dbconn._db.command.ExecuteNonQuery();
+					db.command.CommandText = "exec dbo.sys_update_generator";
+					db.command.ExecuteNonQuery();
 				}
 				catch (Exception ex1)
 				{
@@ -218,7 +218,7 @@ namespace kibicom.tlib.data_store_cli
 
 				MessageBox.Show("При сохранении заказа произошла ошибка, \r\n часть данных сохранить не удалось. \r\n Расчитайте заказ повторно - это исправит проблему!");
 
-				dbconn._db.CloseDB();
+				db.CloseDB();
 
 				//пробуем еще раз сохранить данные
 				//f_2_store(tab, id_key);
@@ -229,7 +229,7 @@ namespace kibicom.tlib.data_store_cli
 
 			//если запросы выполнены успешно
 
-			dbconn._db.CloseDB();
+			db.CloseDB();
 
 			err = 4000;
 			//принимаем изменения в таблице

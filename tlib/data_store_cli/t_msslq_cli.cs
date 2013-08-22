@@ -52,6 +52,7 @@ namespace kibicom.tlib.data_store_cli
 
 			if (!this["sql_conn"].f_is_empty())
 			{
+				this["is_connected"].f_val(true);
 				return this;
 			}
 
@@ -214,8 +215,9 @@ namespace kibicom.tlib.data_store_cli
 			string cmd_text = args["cmd"].f_str();
 			bool conn_keep_open = args["conn_keep_open"].f_def(false).f_bool();
 			bool exec_scalar = args["exec_scalar"].f_def(true).f_bool();
-			bool transact = args["transact"].f_def(true).f_bool();
+			bool transact = args["transact"].f_def(false).f_bool();
 			bool rollback_fail=args["rollbakc_fail"].f_def(true).f_bool();
+			bool commit_done = args["commit_done"].f_def(true).f_bool();
 
 			SqlConnection conn = f_connect(args)["sql_conn"].f_val<SqlConnection>();
 
@@ -278,13 +280,31 @@ namespace kibicom.tlib.data_store_cli
 					t f_done_res = t.f_f("f_done", args.f_add(true, new t() { { "res_cnt", res_cnt } }));
 
 					//если fdone вернул подтверждение транзакции или не вернул ничего то подтверждаем
-					if (f_done_res["commit"].f_def(true).f_bool() && transact)
+					if (transact)
 					{
-						tran.Commit();
+						if (f_done_res["commit"].f_def(true).f_bool() )
+						{
+							tran.Commit();
+						}
+						else
+						{
+							tran.Rollback();
+						}
 					}
-					else
+				}
+				else
+				{
+					//если fdone вернул подтверждение транзакции или не вернул ничего то подтверждаем
+					if (transact)
 					{
-						tran.Rollback();
+						if (commit_done)
+						{
+							tran.Commit();
+						}
+						else
+						{
+							tran.Rollback();
+						}
 					}
 				}
 
@@ -299,12 +319,12 @@ namespace kibicom.tlib.data_store_cli
 			{
 				conn.Close();
 
-				ex.Data.Add("args", args);
+				//ex.Data.Add("args", args);
 
 				t f_fail_res=t.f_f(args["f_fail"].f_f(), args.f_add(true, new t() 
 				{ 
 					{ "message", "connection failed" },
-					{ "ex", ex}
+					{ "ex", ex }
 				}));
 
 				//если f_fail вернул подтверждение транзакции или не вернул ничего то подтверждаем
@@ -343,11 +363,11 @@ namespace kibicom.tlib.data_store_cli
 			string query = args["each"]["query"].f_str();
 			string sort = args["each"]["sort"].f_str();
 			int timeout=args["timeout"].f_def(60).f_int();
+			bool conn_keep_open = args["conn_keep_open"].f_def(false).f_bool();
 
 			//OleDbConnection conn = f_connect(args)["sql_conn"].f_val<OleDbConnection>();
 			SqlConnection conn = f_connect(new t().f_add(true, args).f_drop(new List<string>() { "f_done", "f_fail" }))
 									["sql_conn"].f_val<SqlConnection>();
-
 
 			//если соединиться не удалось вызываем fail и прекращаем работу
 			if (!this["is_connected"].f_bool())
@@ -359,8 +379,10 @@ namespace kibicom.tlib.data_store_cli
 			//t_f<t, t> f_done = args["f_done"].f_f<t_f>();
 			try
 			{
-
-				conn.Open();
+				if (conn.State != ConnectionState.Open)
+				{
+					conn.Open();
+				}
 
 				//выбираем нужную БД
 				f_set_db(args);
@@ -378,6 +400,11 @@ namespace kibicom.tlib.data_store_cli
 
 				//получаем данные, заполняем таблицу
 				ad.Fill(tab);
+
+				if (!conn_keep_open)
+				{
+					conn.Close();
+				}
 
 				conn.Close();
 
@@ -555,20 +582,38 @@ namespace kibicom.tlib.data_store_cli
 		{
 			DataTable tab = args["tab"].f_val<DataTable>();
 			DataRow row = args["row"].f_val<DataRow>();
-			string tab_name = args["tab_name"].f_str();
-			string key_name = args["key_name"].f_str();
+			t t_tab = args["t_tab"];
+			t t_row = args["t_row"];
+			string tab_name = args["tab_name"].f_def(tab.TableName).f_str();
+			string key_name = args["key_name"].f_def("id").f_str();
+
+			if (tab == null)
+			{
+				tab = new DataTable(tab_name);
+				if (row != null)
+				{
+
+				}
+				else if (!t_row.f_is_empty())
+				{
+
+				}
+			}
+
+			
 
 			f_make_ins_query(new t()
 			{
 				{"tab", tab},
 				{"tab_name", tab_name},
 				{"key_name", key_name},
+				{"row_state", "added"},
 				{
 					"f_done", new t_f<t,t>(delegate (t args1)
 					{
 						string query = args1["query"].f_str();
 						int processed_dr_cnt = args1["processed_dr_cnt"].f_int();
-
+						
 						//выполняем команды вставки
 						f_store_put_exec_de(new t()
 						{
@@ -595,6 +640,8 @@ namespace kibicom.tlib.data_store_cli
 									//еще раз принимаем изменения
 									tab.AcceptChanges();
 
+									t.f_f("f_done", args.f_add(true, new t() { { "res_cnt", processed_dr_cnt } }));
+
 									return new t();
 								})
 							}
@@ -610,7 +657,8 @@ namespace kibicom.tlib.data_store_cli
 			{
 				{"tab", tab},
 				{"tab_name", tab_name},
-				{"key_name", key_name},
+				{"id_key_name", key_name},
+				{"row_state", "modify"},
 				{
 					"f_done", new t_f<t,t>(delegate (t args1)
 					{
@@ -700,7 +748,8 @@ namespace kibicom.tlib.data_store_cli
 
 			t.f_f("f_done", args.f_add(true, new t()
 			{
-				{"query", query}
+				{"query", query},
+				{"processed_dr_cnt", processed_dr_cnt},
 			}));
 
 			return new t()
@@ -713,15 +762,27 @@ namespace kibicom.tlib.data_store_cli
 		static public t f_make_upd_query(t args)
 		{
 			DataTable tab = args["tab"].f_val<DataTable>();
-			string id_key = args["id_key"].f_str();
+			string tab_name = args["tab_name"].f_str();
+			string id_key_name = args["id_key_name"].f_str();
+			string row_state = args["row_state"].f_str();
 
 			string set_date_format_sql = "SET DATEFORMAT ymd \r\n";
 			string set_language_sql = "SET LANGUAGE Russian \r\n";
 			string upd_sql_str = "";
 			string vals = "";
 			int oper_dr_cnt = 0;
+			int processed_dr_cnt = 0;
 			foreach (DataRow dr in tab.Rows)
 			{
+
+				if (!row_state.ToLower().Contains(dr.RowState.ToString().ToLower()) && row_state != "")
+				{
+					continue;
+				}
+
+				//текущая строка попадает в запрос
+				processed_dr_cnt++;
+
 				//собираем измененные значения
 				// set col1=val1, col2=val2...
 				vals = "";
@@ -731,7 +792,7 @@ namespace kibicom.tlib.data_store_cli
 				}
 
 				//собираем строку обновления
-				upd_sql_str += " update " + tab.TableName + " set " + vals + " where " + id_key + "=" + dr[id_key];
+				upd_sql_str += " update " + tab.TableName + " set " + vals + " where " + id_key_name + "=" + dr[id_key_name];
 
 				//MessageBox.Show(upd_sql_str);
 
@@ -743,12 +804,28 @@ namespace kibicom.tlib.data_store_cli
 
 			string query = set_date_format_sql + set_language_sql + upd_sql_str;
 
-			t.f_f("f_done", args.f_add(true, new t()
+			if (oper_dr_cnt > 0)
 			{
-				{"query", query}
-			}));
+				t.f_f("f_done", args.f_add(true, new t()
+				{
+					{"query", query},
+					{"processed_dr_cnt", processed_dr_cnt},
+				}));
+			}
+			else
+			{
+				t.f_f("f_fail", args.f_add(true, new t()
+				{
+					{
+						"err", new t()
+						{
+							{ "message", "нет строк для обновления"}
+						}
+					}
+				}));
+			}
 
-			return new t() { { "query", query } };
+			return new t() { { "query", query }, { "processed_dr_cnt", processed_dr_cnt }, };
 		}
 
 		public t f_store_put_exec_de(t args)
@@ -766,9 +843,9 @@ namespace kibicom.tlib.data_store_cli
 					{
 						{"cmd" , query},
 						{"rollback_fail", true},
-						{"exec_scalar", true},
+						{"exec_scalar", false},
 						{
-							"fdone", new t_f<t,t>(delegate (t args2)
+							"f_done", new t_f<t,t>(delegate (t args2)
 							{
 								int res_cnt = args2["res_cnt"].f_int();
 
@@ -779,6 +856,16 @@ namespace kibicom.tlib.data_store_cli
 
 									return new t(){{"commit", true}};
 								}
+
+								return new t() { { "commit", false } };
+								
+							})
+						},
+						{
+							"f_fail", new t_f<t,t>(delegate (t args2)
+							{
+								
+								t.f_f(args["f_fail"].f_f(), args2);
 
 								return new t() { { "commit", false } };
 								
@@ -801,14 +888,14 @@ namespace kibicom.tlib.data_store_cli
 				//здесь необходимо сделать проверку на эту ошибку
 
 				//откатываем сделанные изменения
-				//dbconn._db.command.Transaction.Rollback();
+				//db.command.Transaction.Rollback();
 
 				//тоже глючная функция
 				try
 				{
 					//команда обновления генератора
-					//dbconn._db.command.CommandText = "exec dbo.sys_update_generator";
-					//dbconn._db.command.ExecuteNonQuery();
+					//db.command.CommandText = "exec dbo.sys_update_generator";
+					//db.command.ExecuteNonQuery();
 				}
 				catch (Exception ex1)
 				{
@@ -817,7 +904,7 @@ namespace kibicom.tlib.data_store_cli
 
 				//MessageBox.Show("При сохранении заказа произошла ошибка, \r\n часть данных сохранить не удалось. \r\n Расчитайте заказ повторно - это исправит проблему!");
 
-				//dbconn._db.CloseDB();
+				//db.CloseDB();
 
 				//пробуем еще раз сохранить данные
 				//f_2_store(tab, id_key);
@@ -828,10 +915,19 @@ namespace kibicom.tlib.data_store_cli
 
 			//если запросы выполнены успешно
 
-			//dbconn._db.CloseDB();
+			//db.CloseDB();
 
 			//err = 4000;
 			
+
+			return new t();
+		}
+
+		//преобразует таблицу из t в DataTable
+		public t f_t_2_data_table(t args)
+		{
+
+
 
 			return new t();
 		}
@@ -919,7 +1015,7 @@ namespace kibicom.tlib.data_store_cli
 
 			}
 
-			dbconn._db.OpenDB();
+			db.OpenDB();
 
 			try
 			{
@@ -930,16 +1026,16 @@ namespace kibicom.tlib.data_store_cli
 				//выполняем запросы обновления
 				if (upd_sql_str != "")
 				{
-					dbconn._db.command.CommandText = set_date_format_sql + set_language_sql + upd_sql_str;
-					r_cnt += dbconn._db.command.ExecuteNonQuery();
+					db.command.CommandText = set_date_format_sql + set_language_sql + upd_sql_str;
+					r_cnt += db.command.ExecuteNonQuery();
 				}
 
 				err = 2000;
 				//выполняем запросы вставки
 				if (ins_sql_str != "")
 				{
-					dbconn._db.command.CommandText = set_date_format_sql + set_language_sql + ins_sql_str;
-					r_cnt += dbconn._db.command.ExecuteNonQuery();
+					db.command.CommandText = set_date_format_sql + set_language_sql + ins_sql_str;
+					r_cnt += db.command.ExecuteNonQuery();
 				}
 
 				if (r_cnt != oper_dr_cnt)
@@ -956,14 +1052,14 @@ namespace kibicom.tlib.data_store_cli
 				//здесь необходимо сделать проверку на эту ошибку
 
 				//откатываем сделанные изменения
-				dbconn._db.command.Transaction.Rollback();
+				db.command.Transaction.Rollback();
 
 				//тоже глючная функция
 				try
 				{
 					//команда обновления генератора
-					dbconn._db.command.CommandText = "exec dbo.sys_update_generator";
-					dbconn._db.command.ExecuteNonQuery();
+					db.command.CommandText = "exec dbo.sys_update_generator";
+					db.command.ExecuteNonQuery();
 				}
 				catch (Exception ex1)
 				{
@@ -972,7 +1068,7 @@ namespace kibicom.tlib.data_store_cli
 
 				MessageBox.Show("При сохранении заказа произошла ошибка, \r\n часть данных сохранить не удалось. \r\n Расчитайте заказ повторно - это исправит проблему!");
 
-				dbconn._db.CloseDB();
+				db.CloseDB();
 
 				//пробуем еще раз сохранить данные
 				//f_2_store(tab, id_key);
@@ -983,7 +1079,7 @@ namespace kibicom.tlib.data_store_cli
 
 			//если запросы выполнены успешно
 
-			dbconn._db.CloseDB();
+			db.CloseDB();
 
 			err = 4000;
 			//принимаем изменения в таблице
