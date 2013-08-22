@@ -132,6 +132,26 @@ namespace kibicom.tlib
 			return new t().f_add(true, this).f_add(replace, val);
 		}
 
+		public t f_dub()
+		{
+			return new t().f_add(true, this);
+		}
+
+		public t f_dub(t item_name_list)
+		{
+			t new_t = new t();
+			foreach (t item_name in (IList<t>)item_name_list)
+			{
+				new_t[item_name.f_str()] = this[item_name.f_str()];
+			}
+			return new_t;
+		}
+
+		public t f_dub_drop(string[] drop_item_name_list)
+		{
+			return new t().f_add(true, this).f_drop(drop_item_name_list);
+		}
+
 		/// <summary>
 		/// <para>replace current value if passed val is not null</para>
 		/// <para>_</para>
@@ -382,11 +402,11 @@ namespace kibicom.tlib
 			}
 			else if (val.GetType().ToString().Contains("kibicom.tlib.t_f"))
 			{
-				key_val_arr[key].val = (t_f<t, t>)val;
+				this[key].val = (t_f<t, t>)val;
 			}
 			else
 			{
-				key_val_arr[key].val = val;
+				this[key].val = val;
 			}
 			return this;
 		}
@@ -643,6 +663,17 @@ namespace kibicom.tlib
 
 		//удаляет переданный массив
 		public t f_drop(List<string> key_arr)
+		{
+			foreach (string key in key_arr)
+			{
+				Remove(key);
+			}
+
+			return this;
+		}
+
+		//удаляет переданный массив
+		public t f_drop(string[] key_arr)
 		{
 			foreach (string key in key_arr)
 			{
@@ -914,7 +945,9 @@ namespace kibicom.tlib
 				}
 				else
 				{
-					return (new t(""));
+					t tval = new t();
+					//val_arr.Add(tval);
+					return tval;
 				}
 			}
 			set
@@ -1060,6 +1093,7 @@ namespace kibicom.tlib
 			}
 			return new t();
 		}
+
 
 		#region выполнено
 
