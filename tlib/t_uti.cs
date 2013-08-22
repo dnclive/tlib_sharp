@@ -163,6 +163,7 @@ namespace kibicom.tlib
 
 		public static string f_mssql_dt(string dt_str)
 		{
+			if (dt_str == "") return dt_str;
 			DateTime dt = new DateTime();
 			DateTime.TryParse(dt_str, out dt);
 			string mssql_dt = dt.ToString("yyyy-MM-dd HH:mm:ss");
