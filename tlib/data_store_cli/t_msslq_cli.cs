@@ -620,7 +620,7 @@ namespace kibicom.tlib.data_store_cli
 							{"query", query},
 							{"exprected_res_cnt", processed_dr_cnt},
 							{
-								"fdone", new t_f<t,t>(delegate (t args2)
+								"f_done", new t_f<t,t>(delegate (t args2)
 								{
 
 									//принимаем изменения в таблице
@@ -671,7 +671,7 @@ namespace kibicom.tlib.data_store_cli
 							{"query", query},
 							{"exprected_res_cnt", processed_dr_cnt},
 							{
-								"fdone", new t_f<t,t>(delegate (t args2)
+								"f_done", new t_f<t,t>(delegate (t args2)
 								{
 
 									//принимаем изменения в таблице
