@@ -53,7 +53,7 @@ namespace kibicom.tlib
 				{
 					return new t() { { "json_str", "" + this.f_str().ToLower() + "" } };
 				}
-				return new t() { { "json_str", "\"" + this.f_str() + "\"" } };
+				return new t() { { "json_str", "\"" + this.f_str().Replace("\"", "\\\"") + "\"" } };
 			}
 
 
